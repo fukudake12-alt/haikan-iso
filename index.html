@@ -1,0 +1,3996 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- ホーム画面に追加した際、Safariのアドレスバーなしの全画面表示（アプリのような見た目）で起動させるための指定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PipeISO">
+<!-- Android Chrome向け（https://で配信された場合に「ホーム画面に追加」で全画面起動できるようにする） -->
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href='data:application/manifest+json,{"name":"PipeISO","short_name":"PipeISO","display":"standalone","start_url":"."}'>
+<title>配管アイソメ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:#f5f6f8;color:#1a1d27;
+  font-family:system-ui,sans-serif;font-size:13px;
+  height:100dvh;overflow:hidden;
+  display:flex;flex-direction:column;
+  touch-action:none;
+}
+header{
+  height:46px;background:#ffffff;border-bottom:1px solid #d8dce3;
+  display:flex;align-items:center;padding:0 10px;gap:8px;flex-shrink:0;z-index:100;
+}
+.logo{font-size:15px;font-weight:700;color:#0277bd;flex:1;}
+.logo small{color:#5c6b8a;font-weight:400;font-size:10px;margin-left:5px;}
+.h-btn{
+  background:#eef1f6;border:1px solid #d8dce3;color:#1a1d27;
+  padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap;
+}
+.h-btn:active{background:#dde2ea;}
+.body{flex:1;display:flex;overflow:hidden;position:relative;}
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:#ffffff;}
+#c{position:absolute;top:0;left:0;touch-action:none;cursor:crosshair;}
+.btbar{
+  height:54px;background:#ffffff;border-top:1px solid #d8dce3;
+  display:flex;align-items:center;justify-content:space-around;
+  padding:0 8px;flex-shrink:0;z-index:100;
+}
+.bt{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  background:none;border:none;color:#5c6b8a;font-size:8px;cursor:pointer;
+  padding:5px 4px;border-radius:8px;min-width:36px;
+  -webkit-tap-highlight-color:transparent;
+}
+.bt .ic{font-size:17px;line-height:1;}
+.bt.on{color:#0277bd;background:rgba(2,119,189,0.1);}
+.bt:active{background:#eef1f6;}
+/* DRAWER */
+.drawer{
+  position:absolute;right:0;top:0;bottom:0;width:112px;
+  background:#ffffff;border-left:1px solid #d8dce3;
+  display:flex;flex-direction:column;overflow-y:auto;
+  transform:translateX(100%);transition:transform 0.22s ease;z-index:50;
+}
+.drawer.open{transform:none;}
+.dc{position:absolute;top:8px;right:8px;background:#eef1f6;border:1px solid #d8dce3;
+  color:#1a1d27;width:26px;height:26px;border-radius:6px;cursor:pointer;
+  font-size:15px;display:flex;align-items:center;justify-content:center;}
+.dsec{padding:6px 6px 4px;}
+.dlabel{font-size:8px;font-weight:700;letter-spacing:0.5px;color:#5c6b8a;text-transform:uppercase;margin-bottom:4px;}
+.dsec-toggle{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;}
+.dsec-toggle:active{background:#eef1f6;}
+.dcaret{float:right;font-size:10px;transition:transform .15s;}
+.dcaret.collapsed{transform:rotate(-90deg);}
+.dg{display:grid;gap:3px;}
+.dg.c2{grid-template-columns:1fr 1fr;}
+.dg.c3{grid-template-columns:1fr 1fr 1fr;}
+.dg.c1{grid-template-columns:1fr;}
+.di{
+  padding:6px 3px;border-radius:6px;border:1.5px solid #d8dce3;
+  background:#eef1f6;color:#1a1d27;cursor:pointer;
+  text-align:center;font-size:10px;-webkit-tap-highlight-color:transparent;
+  line-height:1.3;
+}
+.di.on{border-color:#0277bd;color:#0277bd;background:rgba(2,119,189,0.08);}
+.di:active{background:#dde2ea;}
+/* 継手メニュー：横並びコンパクト行 */
+.fi{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:4px 2px;border-radius:6px;border:1.5px solid #d8dce3;
+  background:#eef1f6;color:#1a1d27;cursor:pointer;
+  text-align:center;font-size:9px;-webkit-tap-highlight-color:transparent;
+  width:100%;line-height:1.2;
+}
+.fi svg{flex-shrink:0;}
+.fi.on{border-color:#0277bd;color:#0277bd;background:rgba(2,119,189,0.08);}
+.fi:active{background:#dde2ea;}
+.dot{width:7px;height:7px;border-radius:50%;margin:0 auto 3px;}
+.div{height:1px;background:#d8dce3;margin:4px 9px;}
+/* OVERLAY */
+.ovl{position:absolute;bottom:10px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:20;}
+.ov{
+  width:38px;height:38px;border-radius:9px;background:#ffffff;border:1px solid #d8dce3;
+  color:#1a1d27;font-size:19px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.12);-webkit-tap-highlight-color:transparent;
+}
+.ov:active{background:#eef1f6;}
+/* ROTATE PANEL */
+.rot-panel{
+  position:absolute;bottom:10px;left:10px;
+  background:#ffffff;border:1px solid #0277bd;border-radius:10px;
+  padding:8px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.18);
+}
+.rot-panel.vis{display:block;}
+.rot-title{font-size:10px;color:#0277bd;font-weight:700;margin-bottom:6px;text-align:center;}
+.rot-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;}
+.rot-btn{
+  padding:5px 3px;border-radius:5px;border:1px solid #d8dce3;
+  background:#eef1f6;color:#1a1d27;font-size:9px;cursor:pointer;text-align:center;
+}
+.rot-btn:active{background:#dde2ea;}
+.rot-btn.on{border-color:#0277bd;color:#0277bd;background:rgba(2,119,189,0.1);}
+.rot-close{width:100%;margin-top:5px;padding:4px;background:rgba(211,47,47,0.08);
+  border:1px solid #d32f2f;color:#d32f2f;border-radius:5px;cursor:pointer;font-size:10px;text-align:center;}
+/* 範囲選択の編集パネル：右側に縦並びで表示し、画面を横に圧迫しないようにする */
+.multisel-panel{
+  position:absolute;top:56px;right:8px;width:96px;
+  background:#ffffff;border:1px solid #0277bd;border-radius:10px;
+  padding:8px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.18);
+  max-height:calc(100% - 76px);overflow-y:auto;
+}
+.multisel-panel.vis{display:block;}
+/* 配管の色・太さ編集パネル：範囲選択パネルと同じく右側に縦並びで表示（重ならないよう下寄りに配置） */
+.pipe-edit-panel{
+  position:absolute;bottom:70px;right:8px;width:96px;
+  background:#ffffff;border:1px solid #0277bd;border-radius:10px;
+  padding:8px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.18);
+  max-height:calc(100% - 150px);overflow-y:auto;
+}
+.pipe-edit-panel.vis{display:block;}
+/* STATUS */
+.status{
+  position:absolute;top:46px;left:8px;
+  background:rgba(255,255,255,0.92);border:1px solid #d8dce3;
+  border-radius:6px;padding:3px 8px;font-size:10px;color:#5c6b8a;
+  z-index:20;pointer-events:none;
+}
+/* ESC（操作中断）ボタン：画面左上、操作中でもすぐタップできる位置 */
+.esc-btn{
+  position:absolute;top:8px;left:8px;width:34px;height:34px;
+  border-radius:8px;background:#ffffff;border:1.5px solid #d32f2f;
+  color:#d32f2f;font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  z-index:30;-webkit-tap-highlight-color:transparent;
+}
+.esc-btn:active{background:#ffebee;}
+/* PROPS */
+.pop{
+  position:absolute;background:#ffffff;border:1px solid #d8dce3;
+  border-radius:10px;padding:11px;min-width:155px;
+  z-index:200;box-shadow:0 4px 20px rgba(0,0,0,0.2);display:none;
+}
+.pop.vis{display:block;}
+.pop-title{font-weight:700;color:#0277bd;margin-bottom:7px;font-size:11px;}
+.pop-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.pop-row label{color:#5c6b8a;font-size:10px;}
+.pop-row select{
+  background:#eef1f6;border:1px solid #d8dce3;color:#1a1d27;
+  padding:2px 4px;border-radius:4px;font-size:10px;width:90px;
+}
+.pop-del{width:100%;margin-top:6px;padding:5px;background:rgba(211,47,47,0.08);
+  border:1px solid #d32f2f;color:#d32f2f;border-radius:6px;cursor:pointer;font-size:11px;text-align:center;}
+/* TOAST */
+.toast{
+  position:fixed;bottom:68px;left:50%;transform:translateX(-50%);
+  background:#1a1d27;border:1px solid #2e3347;color:#f5f6f8;
+  padding:5px 15px;border-radius:20px;font-size:11px;
+  z-index:500;opacity:0;transition:opacity 0.3s;pointer-events:none;
+}
+.toast.show{opacity:1;}
+
+/* ライセンスキー入力ゲート */
+.license-overlay{
+  position:fixed;inset:0;background:#f5f6f8;
+  z-index:9999;display:none;align-items:center;justify-content:center;
+}
+.license-overlay.vis{display:flex;}
+.license-box{
+  background:#ffffff;border:1px solid #d8dce3;border-radius:14px;
+  padding:24px;width:min(300px,88vw);box-shadow:0 8px 28px rgba(0,0,0,0.15);
+  text-align:center;
+}
+.license-title{font-size:15px;font-weight:700;color:#0277bd;margin-bottom:6px;}
+.license-sub{font-size:11px;color:#5c6b8a;margin-bottom:16px;line-height:1.5;}
+.license-box input{
+  width:100%;padding:10px;border:1.5px solid #d8dce3;border-radius:8px;
+  background:#eef1f6;color:#1a1d27;font-size:15px;margin-bottom:10px;text-align:center;
+  letter-spacing:1px;
+}
+.license-err{color:#d32f2f;font-size:11px;margin-bottom:10px;display:none;}
+.license-btn{
+  width:100%;padding:10px;border-radius:8px;border:none;background:#0277bd;color:#fff;
+  font-weight:700;font-size:14px;cursor:pointer;
+}
+
+/* テキスト入力ポップアップ（軽量：画面を暗く覆わず、上の方にさっと出すカード） */
+.text-input-overlay{
+  position:fixed;inset:0;
+  z-index:600;display:none;align-items:flex-start;justify-content:center;
+  padding-top:54px;pointer-events:none;
+}
+.text-input-overlay.vis{display:flex;}
+.text-input-box{
+  background:#ffffff;border-radius:10px;padding:10px 12px;width:min(220px,78vw);
+  box-shadow:0 4px 18px rgba(0,0,0,0.22);border:1px solid #d8dce3;
+  pointer-events:auto;
+}
+.text-input-title{font-size:11px;font-weight:700;color:#0277bd;margin-bottom:6px;}
+.text-input-box input{
+  width:100%;padding:7px 9px;border:1.5px solid #d8dce3;border-radius:7px;
+  background:#eef1f6;color:#1a1d27;font-size:14px;margin-bottom:8px;
+}
+.text-input-btns{display:flex;gap:6px;}
+.text-input-cancel,.text-input-ok{
+  flex:1;padding:7px;border-radius:7px;border:none;font-size:12px;cursor:pointer;
+}
+.text-input-cancel{background:#eef1f6;color:#5c6b8a;}
+.text-input-ok{background:#0277bd;color:#fff;font-weight:700;}
+
+/* 共有シート */
+.share-sheet-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.4);
+  z-index:600;display:none;align-items:flex-end;justify-content:center;
+}
+.share-sheet-overlay.vis{display:flex;}
+.share-sheet{
+  background:#ffffff;border-radius:16px 16px 0 0;padding:14px;width:100%;max-width:480px;
+  box-shadow:0 -4px 24px rgba(0,0,0,0.25);
+}
+.share-sheet-title{font-size:12px;font-weight:700;color:#5c6b8a;margin-bottom:10px;text-align:center;}
+.share-sheet-item{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:12px 10px;border-radius:10px;border:1px solid #eef1f6;background:#fafbfc;
+  font-size:14px;color:#1a1d27;cursor:pointer;margin-bottom:8px;text-align:left;
+}
+.share-sheet-item .ssic{font-size:18px;width:24px;text-align:center;}
+.share-sheet-item:active{background:#eef1f6;}
+.share-sheet-cancel{
+  width:100%;padding:11px;border-radius:10px;border:none;background:#eef1f6;color:#5c6b8a;
+  font-size:13px;cursor:pointer;margin-top:4px;
+}
+
+/* マイ記号：自由描画スタンプ作成エディタ */
+.stamp-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.45);
+  z-index:700;display:none;align-items:center;justify-content:center;
+}
+.stamp-overlay.vis{display:flex;}
+.stamp-box{
+  background:#ffffff;border-radius:14px;padding:12px;width:min(320px,90vw);
+  box-shadow:0 8px 28px rgba(0,0,0,0.25);
+}
+.stamp-title{font-size:13px;font-weight:700;color:#0277bd;margin-bottom:8px;text-align:center;}
+.stamp-canvas-wrap{
+  width:100%;aspect-ratio:1/1;background:#fafbfc;border:1.5px solid #d8dce3;
+  border-radius:10px;overflow:hidden;touch-action:none;margin-bottom:8px;position:relative;
+}
+.stamp-canvas-wrap canvas{width:100%;height:100%;display:block;}
+.stamp-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px;}
+.part-picker-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.45);
+  z-index:800;display:none;align-items:center;justify-content:center;
+}
+.part-picker-overlay.vis{display:flex;}
+.part-picker-box{
+  background:#ffffff;border-radius:14px;padding:12px;width:min(300px,90vw);
+  max-height:75vh;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,0.25);
+}
+.part-picker-title{font-size:13px;font-weight:700;color:#0277bd;margin-bottom:8px;text-align:center;}
+.part-picker-close{
+  width:100%;margin-top:6px;padding:8px;border-radius:8px;border:none;
+  background:#eef1f6;color:#5c6b8a;font-size:12px;cursor:pointer;
+}
+.stamp-tool-btn{
+  padding:7px 3px;border-radius:7px;border:1.5px solid #d8dce3;background:#eef1f6;
+  color:#1a1d27;font-size:10px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;
+}
+.stamp-tool-btn.on{border-color:#0277bd;color:#0277bd;background:rgba(2,119,189,0.1);}
+.stamp-tool-btn:active{background:#dde2ea;}
+.stamp-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;}
+.stamp-name-input{
+  width:100%;padding:8px;border:1.5px solid #d8dce3;border-radius:8px;
+  background:#eef1f6;color:#1a1d27;font-size:13px;margin-bottom:8px;text-align:center;
+}
+.stamp-footer{display:flex;gap:6px;}
+.stamp-cancel,.stamp-save{
+  flex:1;padding:9px;border-radius:8px;border:none;font-size:12px;cursor:pointer;font-weight:700;
+}
+.stamp-cancel{background:#eef1f6;color:#5c6b8a;}
+.stamp-save{background:#0277bd;color:#fff;}
+.stamp-hint{font-size:9.5px;color:#5c6b8a;text-align:center;margin-bottom:6px;line-height:1.4;}
+
+/* マイ記号：管理（削除）用リスト */
+.custom-manage-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.45);
+  z-index:700;display:none;align-items:center;justify-content:center;
+}
+.custom-manage-overlay.vis{display:flex;}
+.custom-manage-box{
+  background:#ffffff;border-radius:14px;padding:12px;width:min(280px,88vw);
+  max-height:70vh;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,0.25);
+}
+.custom-manage-title{font-size:13px;font-weight:700;color:#0277bd;margin-bottom:8px;text-align:center;}
+.custom-manage-item{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 10px;border-radius:8px;background:#f5f6f8;margin-bottom:6px;font-size:12px;
+}
+.custom-manage-del{
+  background:rgba(211,47,47,0.1);border:1px solid #d32f2f;color:#d32f2f;
+  border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;
+}
+.custom-manage-empty{font-size:11px;color:#5c6b8a;text-align:center;padding:12px 0;}
+.custom-manage-close{
+  width:100%;margin-top:4px;padding:8px;border-radius:8px;border:none;
+  background:#eef1f6;color:#5c6b8a;font-size:12px;cursor:pointer;
+}
+
+/* 横画面（スマホを横向きにした場合）：高さが狭くなる分、ヘッダーと下部メニューを詰めて
+   キャンバス（作図エリア）をできるだけ広く確保する */
+@media (orientation: landscape) and (max-height: 500px){
+  header{height:34px;padding:0 8px;}
+  .logo{font-size:13px;}
+  .logo small{display:none;} /* サブタイトルは省略してスペースを節約 */
+  .h-btn{padding:3px 8px;font-size:10px;}
+  .btbar{height:42px;padding:0 4px;}
+  .bt{padding:2px 2px;min-width:30px;}
+  .bt .ic{font-size:14px;}
+  .drawer{width:100px;}
+  .ov{width:32px;height:32px;font-size:16px;}
+}
+
+/* PRINT */
+@media print{
+  body{background:#fff;color:#000;}
+  header,.btbar,.ovl,.esc-btn,.drawer,.rot-panel,.multisel-panel,.pipe-edit-panel,.status,.toast,.pop,.text-input-overlay,.share-sheet-overlay,.stamp-overlay,.custom-manage-overlay{display:none!important;}
+  .canvas-wrap{position:static;width:100%;height:100vh;}
+}
+</style>
+</head>
+<body>
+
+<div class="license-overlay" id="licenseOverlay">
+  <div class="license-box">
+    <div class="license-title">🔒 ライセンスキーを入力</div>
+    <div class="license-sub">このアプリを継続してご利用いただくには、配布されたライセンスキーの入力が必要です（約6か月ごとに再確認されます）</div>
+    <input id="licenseKeyField" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ライセンスキー">
+    <div class="license-err" id="licenseError">キーが正しくありません。管理者にご確認ください。</div>
+    <button class="license-btn" id="licenseConfirmBtn">確認</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">PipeISO <small>配管アイソメ</small></div>
+  <button class="h-btn" onclick="triggerLoadFile()">📂開く</button>
+  <button class="h-btn" onclick="openShareSheet()">📤共有</button>
+  <button class="h-btn" onclick="clearAll()">🗑全消去</button>
+  <input type="file" id="loadFileInput" accept=".pipeiso,.json,application/json" style="display:none" onchange="handleLoadFile(event)">
+</header>
+
+<div class="body">
+  <div class="canvas-wrap" id="wrap">
+    <canvas id="c"></canvas>
+    <div class="esc-btn" onclick="escapeToNeutral()" title="操作を中断してニュートラルに戻る">⏹</div>
+    <div class="status" id="status">配管</div>
+
+    <div class="ovl">
+      <div class="ov" onclick="setToolFitting()" title="メニューを開く">☰</div>
+    </div>
+
+    <div class="multisel-panel" id="multiSelPanel">
+      <div class="rot-title" id="multiSelTitle">0個選択中</div>
+      <div class="rot-btns" style="grid-template-columns:repeat(2,1fr);" id="colorSwatches"></div>
+      <div class="rot-btns" style="grid-template-columns:repeat(1,1fr);margin-top:4px;" id="multiSelThicknessBtns"></div>
+      <button class="rot-close" onclick="deleteMultiSel()" style="background:rgba(211,47,47,0.9);color:#fff;border-color:#d32f2f;margin-top:6px;">🗑 削除</button>
+      <button class="rot-close" onclick="clearMultiSel()">選択解除</button>
+    </div>
+
+    <div class="pipe-edit-panel" id="pipeEditPanel">
+      <div class="rot-title">配管編集中</div>
+      <div class="rot-btns" style="grid-template-columns:repeat(2,1fr);" id="pipeColorSwatches"></div>
+      <div class="rot-btns" style="grid-template-columns:repeat(1,1fr);margin-top:4px;" id="pipeThicknessBtns"></div>
+    </div>
+  </div>
+
+  <div class="drawer" id="drawer">
+    <div class="dc" onclick="closeDrawer()">✕</div>
+    <div style="height:34px"></div>
+
+    <!-- ■ 配管の分割 -->
+    <div class="dsec">
+      <div class="dlabel">配管操作</div>
+      <button class="di" style="width:100%;margin-top:4px;" onclick="setTool('split')">✂ 分割</button>
+    </div>
+    <div class="div"></div>
+
+    <!-- 空白 -->
+    <div style="height:10px"></div>
+
+    <!-- ■ 既設／新設 -->
+    <div class="dsec">
+      <div class="dlabel">既設／新設スタンプ</div>
+      <div class="dg c2">
+        <button class="di" onclick="setTool('stampExisting')">┄┄<br>既設</button>
+        <button class="di" onclick="setTool('stampNew')">──<br>新設</button>
+      </div>
+    </div>
+    <div class="div"></div>
+
+    <!-- ■ 溶接部 -->
+    <div class="dsec dsec-toggle" onclick="toggleSection('weld')">
+      <div class="dlabel">溶接部 <span class="dcaret" id="caretWeld">▾</span></div>
+    </div>
+    <div id="secWeld">
+      <div class="dsec">
+        <div class="dg c1" id="weldGrid"></div>
+      </div>
+    </div>
+    <div class="div"></div>
+
+    <!-- ■ アイソメ用（上段）-->
+    <div class="dsec">
+      <div class="dlabel" style="color:#0277bd;">▷ アイソメ用</div>
+    </div>
+    <div id="secIso">
+      <div class="dsec dsec-toggle" onclick="toggleSection('isoFl')">
+        <div class="dlabel">フランジ付 <span class="dcaret" id="caretIsoFl">▾</span></div>
+      </div>
+      <div id="secIsoFl">
+        <div class="dsec"><div class="dg c1" id="flGrid"></div></div>
+      </div>
+      <div class="div"></div>
+      <div class="dsec dsec-toggle" onclick="toggleSection('isoNfl')">
+        <div class="dlabel">フランジ無 <span class="dcaret" id="caretIsoNfl">▾</span></div>
+      </div>
+      <div id="secIsoNfl">
+        <div class="dsec"><div class="dg c1" id="nflGrid"></div></div>
+      </div>
+    </div>
+    <div class="div"></div>
+
+    <!-- ■ 平面図用（下段）-->
+    <div class="dsec">
+      <div class="dlabel" style="color:#2e7d32;">▷ 平面図用</div>
+    </div>
+    <div id="secPlan">
+      <div class="dsec dsec-toggle" onclick="toggleSection('planFl')">
+        <div class="dlabel">フランジ付 <span class="dcaret" id="caretPlanFl">▾</span></div>
+      </div>
+      <div id="secPlanFl">
+        <div class="dsec"><div class="dg c1" id="flGridPlan"></div></div>
+      </div>
+      <div class="div"></div>
+      <div class="dsec dsec-toggle" onclick="toggleSection('planNfl')">
+        <div class="dlabel">フランジ無 <span class="dcaret" id="caretPlanNfl">▾</span></div>
+      </div>
+      <div id="secPlanNfl">
+        <div class="dsec"><div class="dg c1" id="nflGridPlan"></div></div>
+      </div>
+    </div>
+    <div class="div"></div>
+
+    <!-- ■ マイ記号（自作スタンプ） -->
+    <div class="dsec">
+      <div class="dlabel">マイ記号</div>
+      <div class="dg c2" style="margin-bottom:4px;">
+        <button class="di" onclick="openStampEditor()">✏️<br>作成</button>
+        <button class="di" onclick="openCustomManage()">🗂<br>管理</button>
+      </div>
+      <div class="dg c1" id="customGrid"></div>
+    </div>
+    <div class="div"></div>
+
+    <!-- ■ 注記マーク（レビュー指摘・変更範囲などの目印） -->
+    <div class="dsec">
+      <div class="dlabel">注記マーク</div>
+      <div class="dg c3">
+        <button class="di" onclick="setMarkerType('circle')">◯<br>丸</button>
+        <button class="di" onclick="setMarkerType('triangle')">△<br>三角</button>
+        <button class="di" onclick="setMarkerType('square')">□<br>四角</button>
+        <button class="di" onclick="setMarkerType('cloud')">☁<br>雲</button>
+        <button class="di" onclick="setMarkerType('arrow')">➔<br>矢印</button>
+        <button class="di" onclick="setMarkerType('balloon')">①<br>番号</button>
+      </div>
+    </div>
+    <div class="div"></div>
+
+    <!-- ■ その他 -->
+    <div class="dsec">
+      <button class="di" style="width:100%" onclick="toggleGrid()">⊞ グリッド切替</button>
+    </div>
+    <div class="dsec">
+      <button class="di" id="bDimToggle" style="width:100%" onclick="toggleDimVisible()">📏 寸法 ON/OFF</button>
+    </div>
+    <div class="dsec">
+      <button class="di" style="width:100%" onclick="setTool('northarrow')">🧭 プラントノース設置</button>
+    </div>
+    <div style="height:16px"></div>
+  </div>
+</div>
+
+<div class="btbar">
+  <button class="bt on" id="bPipe" onclick="setTool('pipe')"><span class="ic">╱</span>配管</button>
+  <button class="bt"    id="bRot"  onclick="rotateStep()"><span class="ic">🔄</span>回転</button>
+  <button class="bt"    id="bMir"  onclick="toggleMirror()"><span class="ic">⇌</span>鏡像</button>
+  <button class="bt"    id="bDim"  onclick="setTool('dim')"><span class="ic">📏</span>寸法変更</button>
+  <button class="bt"    id="bSel"  onclick="setTool('rangesel')"><span class="ic">⬚</span>範囲選択</button>
+  <button class="bt"    id="bScale" onclick="scaleAction()"><span class="ic">⤢</span>尺度変更</button>
+  <button class="bt"    id="bTxt"  onclick="setTool('text')"><span class="ic">Ａ</span>文字</button>
+  <button class="bt"    id="bErs"  onclick="eraseAction()"><span class="ic">✕</span>消去</button>
+  <button class="bt"    id="bUndo" onclick="undoAct()"><span class="ic">↩</span>戻る</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="text-input-overlay" id="textInputOverlay">
+  <div class="text-input-box">
+    <div class="text-input-title" id="textInputTitle">文字を入力</div>
+    <input id="textInputField" type="text" inputmode="text" onkeydown="if(event.key==='Enter')confirmTextInput();">
+    <div class="text-input-btns">
+      <button class="text-input-cancel" onclick="closeTextInput()">キャンセル</button>
+      <button class="text-input-ok" onclick="confirmTextInput()">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="share-sheet-overlay" id="shareSheetOverlay" onclick="if(event.target===this)closeShareSheet();">
+  <div class="share-sheet">
+    <div class="share-sheet-title">保存・送付方法を選択</div>
+    <button class="share-sheet-item" onclick="saveProjectFile(); closeShareSheet();">
+      <span class="ssic">💾</span>作図データを保存（続きから編集可）
+    </button>
+    <button class="share-sheet-item" onclick="shareProjectFile(); closeShareSheet();">
+      <span class="ssic">📨</span>作図データを送付（メール・LINEなど）
+    </button>
+    <button class="share-sheet-item" onclick="copyImageForExcel(); closeShareSheet();">
+      <span class="ssic">📋</span>画像をコピー（Excelに貼り付け）
+    </button>
+    <button class="share-sheet-item" onclick="shareImageByMail(); closeShareSheet();">
+      <span class="ssic">📤</span>共有（Gmail・Outlookなどアプリを選択）
+    </button>
+    <button class="share-sheet-item" onclick="exportPNG(); closeShareSheet();">
+      <span class="ssic">⬇️</span>PNG画像を保存
+    </button>
+    <button class="share-sheet-item" onclick="exportSVG(); closeShareSheet();">
+      <span class="ssic">⬇️</span>SVG画像を保存
+    </button>
+    <button class="share-sheet-item" onclick="exportPDF(); closeShareSheet();">
+      <span class="ssic">📄</span>PDFで保存（線を編集可能）
+    </button>
+    <button class="share-sheet-cancel" onclick="closeShareSheet()">キャンセル</button>
+  </div>
+</div>
+
+<!-- マイ記号：自由描画スタンプ作成エディタ -->
+<div class="stamp-overlay" id="stampOverlay">
+  <div class="stamp-box">
+    <div class="stamp-title">オリジナル記号を作成</div>
+    <div class="stamp-hint">線は15°刻みにスナップします。図形を組み合わせて描き、保存すると自動でバランス（中心・大きさ）を整えて継手として使えるようになります。</div>
+    <div class="stamp-canvas-wrap" id="stampCanvasWrap">
+      <canvas id="stampCanvas"></canvas>
+    </div>
+    <div class="stamp-tools">
+      <button class="stamp-tool-btn on" id="stTool-line" onclick="setStampTool('line')">╱<br>直線</button>
+      <button class="stamp-tool-btn" id="stTool-rect" onclick="setStampTool('rect')">□<br>四角</button>
+      <button class="stamp-tool-btn" id="stTool-circle" onclick="setStampTool('circle')">○<br>円</button>
+      <button class="stamp-tool-btn" id="stTool-triangle" onclick="setStampTool('triangle')">△<br>三角</button>
+      <button class="stamp-tool-btn" id="stTool-part" onclick="setStampTool('part')">⚙<br>既存パーツ</button>
+    </div>
+    <div class="stamp-actions">
+      <button class="stamp-tool-btn" onclick="undoStamp()">↩ 一つ戻す</button>
+      <button class="stamp-tool-btn" onclick="clearStamp()">🗑 全消去</button>
+    </div>
+    <input class="stamp-name-input" id="stampNameInput" type="text" placeholder="記号の名前（例：特殊弁）" maxlength="12">
+    <div class="stamp-footer">
+      <button class="stamp-cancel" onclick="closeStampEditor()">キャンセル</button>
+      <button class="stamp-save" onclick="saveStamp()">整えて保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- マイ記号：既存パーツ（継手）選択 -->
+<div class="part-picker-overlay" id="partPickerOverlay">
+  <div class="part-picker-box">
+    <div class="part-picker-title">組み合わせるパーツを選択</div>
+    <div class="dg c3" id="partPickerGrid"></div>
+    <button class="part-picker-close" onclick="closePartPicker()">キャンセル</button>
+  </div>
+</div>
+
+<!-- マイ記号：管理（削除） -->
+<div class="custom-manage-overlay" id="customManageOverlay">
+  <div class="custom-manage-box">
+    <div class="custom-manage-title">マイ記号を管理</div>
+    <div id="customManageList"></div>
+    <button class="custom-manage-close" onclick="closeCustomManage()">閉じる</button>
+  </div>
+</div>
+
+<script>
+// ── 定数 ──────────────────────────────────────
+var GRID_M       = 0.1;
+var PX_PER_M     = 80;
+var SNAP_DIST_PX = 28;  // スナップ精度向上のため拡大
+var DBL_MS       = 350;
+
+// ── ライセンスキー管理 ─────────────────────────
+// ★有効なライセンスキーはここに追加・削除してください（複数登録可）。
+//   この配列からキーを外してファイルを更新すると、そのキーを使っている人は
+//   次回アクセス時（6か月を待たずに）再入力を求められます。
+var LICENSE_KEYS = ['17341'];
+// 何日ごとに再入力を求めるか（約6か月=183日）
+var LICENSE_PERIOD_DAYS = 183;
+var LICENSE_STORAGE_KEY = 'pipeiso_license_v1';
+
+function licenseStorageGet(){
+  try{ return JSON.parse(localStorage.getItem(LICENSE_STORAGE_KEY) || 'null'); }
+  catch(e){ return null; }
+}
+function licenseStorageSet(obj){
+  try{ localStorage.setItem(LICENSE_STORAGE_KEY, JSON.stringify(obj)); }
+  catch(e){ /* 保存できない環境では毎回キー入力を求める形になる */ }
+}
+// 初回起動時はfirstUsedAtだけを記録し、キー入力なしで使い始められる。
+// キー入力済みならverifiedAtから、未入力（初回猶予中）ならfirstUsedAtから
+// LICENSE_PERIOD_DAYS日が経過するまではゲートを表示しない。
+function isWithinGracePeriod(rec){
+  if(!rec) return false;
+  var now = Date.now();
+  if(rec.key){
+    if(LICENSE_KEYS.indexOf(rec.key) === -1) return false; // キーが失効/削除された
+    var elapsedSinceVerify = (now - rec.verifiedAt) / 86400000;
+    return elapsedSinceVerify < LICENSE_PERIOD_DAYS;
+  }
+  var elapsedSinceFirstUse = (now - rec.firstUsedAt) / 86400000;
+  return elapsedSinceFirstUse < LICENSE_PERIOD_DAYS;
+}
+function showLicenseGate(onSuccess){
+  var overlay = document.getElementById('licenseOverlay');
+  var input   = document.getElementById('licenseKeyField');
+  var errEl   = document.getElementById('licenseError');
+  var btn     = document.getElementById('licenseConfirmBtn');
+  errEl.style.display = 'none';
+  input.value = '';
+  overlay.classList.add('vis');
+  function tryConfirm(){
+    var v = input.value.trim();
+    if(LICENSE_KEYS.indexOf(v) !== -1){
+      licenseStorageSet({key:v, verifiedAt:Date.now()});
+      overlay.classList.remove('vis');
+      onSuccess();
+    } else {
+      errEl.style.display = 'block';
+      input.select();
+    }
+  }
+  btn.onclick = tryConfirm;
+  input.onkeydown = function(e){ if(e.key==='Enter') tryConfirm(); };
+  setTimeout(function(){ input.focus(); }, 150);
+}
+function bootWithLicenseCheck(startFn){
+  var rec = licenseStorageGet();
+  if(!rec){
+    // 初回起動：キー入力なしでそのまま使える。起動日時だけ記録する。
+    licenseStorageSet({firstUsedAt:Date.now()});
+    startFn();
+    return;
+  }
+  if(isWithinGracePeriod(rec)){ startFn(); }
+  else { showLicenseGate(startFn); }
+}
+
+// 配管色（画面表示用）
+var PIPE_COLOR = '#000000';
+
+// フランジ付き判定
+var FL_TYPES = ['fl_gate','fl_globe','fl_ball','fl_butterfly','fl_check','flange','fl_solenoid','fl_control'];
+
+// ── STATE ──────────────────────────────────────
+var S = {
+  tool:'pipe', pt:'CS', ft:'fl_gate', weldType:'weld_butt',
+  showGrid:true, showDim:true, zoom:1, px:0, py:0,
+  els:[], sel:null, hist:[],
+  drawing:false, drawStart:null, prev:null, snapPt:null,
+  drawingLeader:false, leaderStart:null, leaderPrev:null,
+  panning:false, panStart:null,
+  pinchDist:0, touches:[], pinching:false,
+  // ドラッグモード
+  dragMode:null,
+  dragEl:null, dragEnd:0,
+  dragOffX:0, dragOffY:0, dragEntryTime:0, dragSubMode:null, dragEnd:null,
+  dragging:false,
+  // ダブルタップ検出（PCのdblclick用に残す）
+  lastTapTime:0, lastTapPos:null,
+  singleTapTimer:null,
+  // 長押し検出
+  longPressTimer:null, longPressFired:false, downPos:null, justGrabbed:false,
+  // 前回の継手角度（連続配置）
+  lastFitAngle:0, lastFit:null,
+  // 平面図用の継手が選択されているか（true時は設置角度を自動で付けない）
+  ftPlan:false,
+  // 範囲選択
+  multiSel:[], rangeSelecting:false, rangeStart:null, rangeEnd:null,
+  // 分割位置の一時マーカー
+  splitMarker:null, splitMarkerTimer:null,
+  // 尺度変更：ボタンを先に押して、次にタップした対象へ適用する待機モード
+  pendingScale:false,
+  // 注記マーク（◯△□雲・矢印・番号バルーン）
+  markerType:'circle', balloonNum:1,
+  // 自作記号（マイ記号）
+  customFittings:[],
+};
+var LONG_PRESS_MS = 480;
+var MOVE_CANCEL_PX = 8;
+
+// ── CANVAS ─────────────────────────────────────
+var canvas = document.getElementById('c');
+var ctx    = canvas.getContext('2d');
+var wrap   = document.getElementById('wrap');
+
+function resize(){
+  var r=wrap.getBoundingClientRect();
+  canvas.width=r.width; canvas.height=r.height; render();
+}
+window.addEventListener('resize', resize);
+// 画面回転（縦画面⇔横画面）時、iPhoneのSafariではresizeイベントだけだと
+// サイズ反映が遅れることがあるため、回転専用イベントでも再計算する
+window.addEventListener('orientationchange', function(){
+  setTimeout(resize, 200);
+});
+if(window.screen && window.screen.orientation){
+  window.screen.orientation.addEventListener('change', function(){
+    setTimeout(resize, 200);
+  });
+}
+
+// ── 回転パネル生成 ─────────────────────────────
+// 鏡像ボタンと同じ対象選択ロジック（長押し中 → タップ選択中 → 直前に設置した継手）
+function currentRotateTarget(){
+  if(S.dragEl && (S.dragEl.kind==='fitting' || S.dragEl.kind==='pipe' || S.dragEl.kind==='northarrow' || S.dragEl.kind==='marker')) return S.dragEl;
+  if(S.sel && (S.sel.kind==='fitting' || S.sel.kind==='pipe' || S.sel.kind==='northarrow' || S.sel.kind==='marker')) return S.sel;
+  if(S.lastFit && S.els.indexOf(S.lastFit)>=0) return S.lastFit;
+  return null;
+}
+function rotateStep(){
+  if(S.multiSel && S.multiSel.length>0){
+    multiSelRotateGroup();
+    return;
+  }
+  var target = currentRotateTarget();
+  if(!target){
+    showToast('継手または配管を長押し・タップで選択してから回転できます');
+    return;
+  }
+  saveH();
+  if(target.kind==='fitting'){
+    var cur = target.angle || 0;
+    var next = (cur + 30) % 360;
+    target.angle = next;
+    S.lastFitAngle = next;
+  } else if(target.kind==='northarrow'){
+    target.angle = ((target.angle||0) + 30) % 360;
+  } else if(target.kind==='marker'){
+    target.angle = ((target.angle||0) + 30) % 360;
+  } else if(target.kind==='pipe'){
+    // 配管の中心点を軸に、両端を30°回転させる
+    var cx = (target.wx1+target.wx2)/2, cy = (target.wy1+target.wy2)/2;
+    var rad = 30 * Math.PI/180;
+    var cosA = Math.cos(rad), sinA = Math.sin(rad);
+    function rotPt(x,y){
+      var dx=x-cx, dy=y-cy;
+      return { x: cx + dx*cosA - dy*sinA, y: cy + dx*sinA + dy*cosA };
+    }
+    var p1 = rotPt(target.wx1, target.wy1);
+    var p2 = rotPt(target.wx2, target.wy2);
+    target.wx1=p1.x; target.wy1=p1.y; target.wx2=p2.x; target.wy2=p2.y;
+  }
+  S.sel = target;
+  if(!S.dragMode) S.lastFit = (target.kind==='fitting' || target.kind==='northarrow' || target.kind==='marker') ? target : null;
+  updateSt();
+  render();
+}
+
+function showRotPanel(el){
+  // 浮動パネルは廃止。ステータス表示で角度を確認できる（updateSt内で対応）
+}
+function hideRotPanel(){}
+
+// ── COORDS ─────────────────────────────────────
+function w2s(wx,wy){ return {x:S.px+wx*PX_PER_M*S.zoom, y:S.py+wy*PX_PER_M*S.zoom}; }
+function s2w(sx,sy){ return {x:(sx-S.px)/(PX_PER_M*S.zoom), y:(sy-S.py)/(PX_PER_M*S.zoom)}; }
+function snapGrid(wx,wy){ return {x:Math.round(wx/GRID_M)*GRID_M, y:Math.round(wy/GRID_M)*GRID_M}; }
+function snapIso(ssx,ssy,sex,sey){
+  var ws=s2w(ssx,ssy), we=s2w(sex,sey);
+  var dx=we.x-ws.x, dy=we.y-ws.y;
+  if(Math.abs(dx)<0.001&&Math.abs(dy)<0.001) return snapGrid(we.x,we.y);
+  var ang=Math.atan2(dy,dx)*180/Math.PI;
+  var s30=Math.round(ang/30)*30, rad=s30*Math.PI/180;
+  var len=Math.sqrt(dx*dx+dy*dy);
+  var sn=Math.round(len/GRID_M)*GRID_M; if(sn<GRID_M) sn=GRID_M;
+  return {x:ws.x+sn*Math.cos(rad), y:ws.y+sn*Math.sin(rad)};
+}
+
+// ── SNAP TO ENDPOINTS ──────────────────────────
+function findSnap(sx,sy,exEl,exEnd){
+  var best=null, bestD=SNAP_DIST_PX;
+  S.els.forEach(function(e){
+    if(e.kind!=='pipe') return;
+    [[e.wx1,e.wy1,0],[e.wx2,e.wy2,1]].forEach(function(p){
+      if(e===exEl&&p[2]===exEnd) return;
+      var sp=w2s(p[0],p[1]);
+      var d=dist2(sx,sy,sp.x,sp.y);
+      if(d<bestD){bestD=d; best={x:p[0],y:p[1]};}
+    });
+  });
+  return best;
+}
+
+// ── RENDER ─────────────────────────────────────
+function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(S.showGrid) drawGrid();
+  // 配管線を先に、継手・溶接記号・引出線・文字を後に描画する（S.els内の追加順に関係なく、
+  // 継手が配管線に隠れて「貫通」して見えないようにするため2パスで描く）
+  S.els.forEach(function(e){ if(e.kind==='pipe') drawEl(e, e===S.sel||e===S.dragEl||S.multiSel.indexOf(e)>=0, false); });
+  S.els.forEach(function(e){ if(e.kind!=='pipe') drawEl(e, e===S.sel||e===S.dragEl||S.multiSel.indexOf(e)>=0, false); });
+  if(S.prev) drawEl(S.prev, false, true);
+  if(S.leaderPrev){
+    drawLeaderLine(S.leaderPrev.wx1, S.leaderPrev.wy1, S.leaderPrev.wx2, S.leaderPrev.wy2, true);
+  }
+  if(S.snapPt){
+    var sp=w2s(S.snapPt.x,S.snapPt.y);
+    ctx.save(); ctx.strokeStyle='#0277bd'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,7,0,Math.PI*2); ctx.stroke(); ctx.restore();
+  }
+  if(S.rangeSelecting && S.rangeStart && S.rangeEnd){
+    var rx=Math.min(S.rangeStart.x,S.rangeEnd.x), ry=Math.min(S.rangeStart.y,S.rangeEnd.y);
+    var rw=Math.abs(S.rangeEnd.x-S.rangeStart.x), rh=Math.abs(S.rangeEnd.y-S.rangeStart.y);
+    ctx.save();
+    ctx.fillStyle='rgba(2,119,189,0.1)'; ctx.strokeStyle='rgba(2,119,189,0.9)';
+    ctx.lineWidth=1.2; ctx.setLineDash([5,4]);
+    ctx.fillRect(rx,ry,rw,rh); ctx.strokeRect(rx,ry,rw,rh);
+    ctx.setLineDash([]); ctx.restore();
+  }
+  if(S.splitMarker){
+    var smp=w2s(S.splitMarker.wx,S.splitMarker.wy);
+    ctx.save();
+    ctx.fillStyle='rgba(211,47,47,0.85)';
+    ctx.beginPath(); ctx.arc(smp.x,smp.y,7*S.zoom,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#ffffff'; ctx.lineWidth=1.6; ctx.stroke();
+    ctx.restore();
+  }
+  updateSt(); updateMirrorButton(); updateMultiSelPanel(); updatePipeEditPanel();
+}
+
+function drawGrid(){
+  var w=canvas.width, h=canvas.height;
+  // グリッドスケールを10倍に拡大（0.1m→1m間隔）
+  var gPx=GRID_M*10*PX_PER_M*S.zoom; if(gPx<6) return;
+  ctx.save(); ctx.strokeStyle='#c8e6a0'; ctx.lineWidth=0.8;
+
+  var tan30=Math.tan(30*Math.PI/180);
+  var ox=((S.px%gPx)+gPx)%gPx;
+  var span=h/tan30+gPx;
+
+  // 右上がり30°線（左から右へ）
+  for(var x=-span+ox; x<w+span; x+=gPx){
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x+h/tan30, h);
+    ctx.stroke();
+  }
+  // 右下がり30°線（左から右へ）
+  for(var x2=-span+ox; x2<w+span; x2+=gPx){
+    ctx.beginPath();
+    ctx.moveTo(x2, 0);
+    ctx.lineTo(x2-h/tan30, h);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function lw(sz){ return (sz||2)*S.zoom; }
+
+function drawEl(el,sel,ghost){
+  ctx.save(); ctx.globalAlpha=ghost?0.42:1;
+  if(el.kind==='pipe'){
+    var p1=w2s(el.wx1,el.wy1), p2=w2s(el.wx2,el.wy2);
+    var col=el.color||PIPE_COLOR;
+    var isExisting = el.status==='existing';
+    ctx.strokeStyle = sel ? '#d32f2f' : (isExisting ? '#9e9e9e' : col);
+    ctx.lineWidth=lw(el.sz); ctx.lineCap='round';
+    if(isExisting){ ctx.setLineDash([7*S.zoom, 5*S.zoom]); }
+    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+    ctx.setLineDash([]);
+    drawDimOnLine(el,col,ghost,sel);
+    if(sel){
+      ctx.strokeStyle='#0277bd'; ctx.lineWidth=1.2;
+      [p1,p2].forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.stroke();});
+    }
+  } else if(el.kind==='fitting'){
+    drawFit(el,sel);
+  } else if(el.kind==='weld'){
+    drawWeld(el,sel);
+  } else if(el.kind==='leader'){
+    drawLeader(el,sel,ghost);
+  } else if(el.kind==='northarrow'){
+    drawNorthArrow(el,sel);
+  } else if(el.kind==='marker'){
+    drawMarker(el,sel);
+  } else if(el.kind==='text'){
+    var sp=w2s(el.wx,el.wy);
+    ctx.font='bold '+(12*S.zoom*(el.scale||1))+'px sans-serif';
+    ctx.fillStyle=sel?'#b71c1c':(el.color||'#d32f2f');
+    ctx.textAlign='left'; ctx.fillText(el.text,sp.x,sp.y);
+    if(sel){
+      var m=ctx.measureText(el.text);
+      ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.strokeRect(sp.x-2,sp.y-13*S.zoom,m.width+4,15*S.zoom); ctx.setLineDash([]);
+    }
+  }
+  ctx.restore();
+}
+
+function drawDimOnLine(el,col,ghost,sel){
+  if(!S.showDim) return;
+  var dx=el.wx2-el.wx1, dy=el.wy2-el.wy1;
+  var len=Math.sqrt(dx*dx+dy*dy);
+  if(len<0.05) return;
+  var disp = (el.dimText !== undefined) ? el.dimText : (Math.round(len*10)/10).toFixed(1);
+  if(disp === '') return; // 意図的に空欄にした場合は、背景の白帯も含め何も描画しない
+  var p1=w2s(el.wx1,el.wy1), p2=w2s(el.wx2,el.wy2);
+  var mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+  var ang=Math.atan2(p2.y-p1.y, p2.x-p1.x);
+  var dispAng=ang;
+  if(dispAng>Math.PI/2||dispAng<-Math.PI/2) dispAng+=Math.PI;
+  var fs=Math.max(9, Math.min(13, 10*S.zoom));
+  var offset = lw()/2 + fs + 3;
+  ctx.save();
+  ctx.translate(mx, my);
+  ctx.rotate(dispAng);
+  ctx.font=fs+'px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  var tw=ctx.measureText(disp).width;
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.fillRect(-tw/2-3, -offset-fs/2-1, tw+6, fs+2);
+  ctx.fillStyle= ghost?'rgba(2,119,189,0.8)':(sel?'#d32f2f':col);
+  ctx.globalAlpha *= 0.9;
+  ctx.fillText(disp, 0, -offset);
+  ctx.restore();
+}
+
+// ── 継手描画（アイソメ記号） ─────────────────────
+function drawFit(el, sel){
+  var sp   = w2s(el.wx, el.wy);
+  var isPlan = !!el.plan; // 平面図用（傾きなし）で設置された継手か
+  var drawColor = sel ? '#d32f2f' : (el.color||PIPE_COLOR); // 選択中／直前に設置したものは赤で統一
+  var ang  = ((el.angle || 0) * Math.PI / 180);
+  var tiltDeg = isPlan ? 0 : 30; // 平面図用は記号自体の傾きを付けない
+  var r    = 18 * S.zoom * (el.scale||1);   // 記号の半径（尺度変更に対応）
+  var lwd  = 1.8 * S.zoom;
+  var hasFl= FL_TYPES.indexOf(el.ft) >= 0;
+  var baseType = el.ft.replace(/^fl_/,''); // フランジプレフィックス除去
+
+  ctx.save();
+  ctx.translate(sp.x, sp.y);
+  ctx.rotate(ang);
+  if(el.mirror) ctx.scale(-1, 1);  // この継手だけを鏡像反転
+  ctx.strokeStyle = drawColor;
+  ctx.lineWidth   = lwd;
+  ctx.lineCap     = 'round';
+
+  // 弁・継手の共通描画（drawColorをそのまま渡し、直前に設置／選択中は全種類共通で赤くなるようにする）
+  if(el.ft.indexOf('custom_') === 0){
+    drawCustomFitting(el.ft, r, drawColor, lwd);
+  } else if(baseType === 'flange'){
+    drawFlange(r, drawColor, lwd, tiltDeg);
+  } else if(baseType === 'gate'){
+    drawValveBody(r, drawColor, lwd, hasFl, tiltDeg);
+    drawGateMark(r, lwd, drawColor);
+  } else if(baseType === 'globe'){
+    drawValveBody(r, drawColor, lwd, hasFl, tiltDeg);
+    drawGlobeMark(r, lwd, drawColor);
+  } else if(baseType === 'ball'){
+    drawValveBody(r, drawColor, lwd, hasFl, tiltDeg);
+    drawBallMark(r, lwd, drawColor);
+  } else if(baseType === 'butterfly'){
+    var rBF = (isPlan && !hasFl) ? r*2 : r; // 平面図・フランジ無は他の弁と大きさを揃える
+    drawButterflyValve(rBF, drawColor, lwd, hasFl, drawColor, tiltDeg);
+  } else if(baseType === 'check'){
+    var rCK = (isPlan && !hasFl) ? r*2 : r; // 平面図・フランジ無は他の弁と大きさを揃える
+    drawCheckValve(rCK, drawColor, lwd, hasFl, drawColor, tiltDeg);
+  } else if(baseType === 'relief'){
+    drawReliefValve(r, drawColor, lwd);
+  } else if(baseType === 'solenoid'){
+    // 配管に対して反時計回り60°（フランジ線と同じアイソメ角度）、画面上は必ず上側になるよう自動調整
+    var solAct = relativeLocalAngle(!!el.mirror, el.angle||0, 60);
+    drawSolenoidValve(r, drawColor, lwd, tiltDeg, solAct);
+  } else if(baseType === 'control'){
+    // 軸線：配管に対して60°（フランジと平行）、画面上は必ず上側になるよう自動調整
+    // 半円：軸線からさらに90°ずらす（＝フランジとは垂直になる）
+    var ctlAct = relativeLocalAngle(!!el.mirror, el.angle||0, 60);
+    drawControlValve(r, drawColor, lwd, tiltDeg, ctlAct, 330*Math.PI/180);
+  } else if(baseType === 'handle'){
+    var actAng = el.mirror ? ang : -ang;
+    drawHandleValve(r, drawColor, lwd, tiltDeg, actAng);
+  } else if(baseType === 'union'){
+    drawUnion(r, drawColor, lwd);
+  } else if(el.ft === 'union_new'){
+    drawUnionNew(r, drawColor, lwd, tiltDeg);
+  } else if(el.ft === 'rc'){
+    drawRC(r, drawColor, lwd);
+  } else if(el.ft === 're' || el.ft === 're_short'){
+    drawRE(r, drawColor, lwd, el.ft === 're_short');
+  } else if(SIMPLE_MARK_TYPES.indexOf(el.ft) >= 0){
+    drawSimpleMark(el.ft, r, drawColor, lwd, tiltDeg);
+  }
+
+  ctx.restore();
+}
+
+// ── 溶接記号：配管線上に点として描画 ───────────────
+function drawWeld(el, sel){
+  var sp = w2s(el.wx, el.wy);
+  var col = sel ? '#d32f2f' : (el.color||'#1a1d27');
+  var ang = ((el.pipeAngle||0) * Math.PI / 180);
+  var wsc = el.scale||1;
+  ctx.save();
+  ctx.translate(sp.x, sp.y);
+  ctx.rotate(ang);
+  if(el.wt === 'weld_butt'){
+    // 突合せ溶接：●
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.2*S.zoom*wsc, 0, Math.PI*2);
+    ctx.fill();
+  } else {
+    // 隅肉溶接：｜（配管に直交する短い太線）
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2.2*S.zoom;
+    ctx.beginPath();
+    ctx.moveTo(0, -6*S.zoom*wsc);
+    ctx.lineTo(0,  6*S.zoom*wsc);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── 引き出し線＋注釈（文字ツール） ─────────────────
+function drawLeaderLine(wx1,wy1,wx2,wy2,isPreview,customColor){
+  var p1=w2s(wx1,wy1), p2=w2s(wx2,wy2);
+  ctx.save();
+  ctx.strokeStyle = isPreview ? 'rgba(2,119,189,0.7)' : (customColor||'#1a1d27');
+  ctx.lineWidth = 1.4*S.zoom;
+  ctx.setLineDash(isPreview ? [4,3] : []);
+  ctx.beginPath();
+  ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // 始点に小さい丸（引き出し起点の目印）
+  ctx.fillStyle = isPreview ? 'rgba(2,119,189,0.7)' : (customColor||'#1a1d27');
+  ctx.beginPath();
+  ctx.arc(p1.x,p1.y,2.4*S.zoom,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawLeader(el, sel, ghost){
+  drawLeaderLine(el.wx1, el.wy1, el.wx2, el.wy2, false, el.color);
+  var p2 = w2s(el.wx2, el.wy2);
+  ctx.save();
+  ctx.font = 'bold '+(12*S.zoom)+'px sans-serif';
+  ctx.fillStyle = sel ? '#d32f2f' : (el.color||'#1a1d27');
+  // 線の向きに応じてテキストを左右どちらに置くか決める
+  var goingRight = el.wx2 >= el.wx1;
+  ctx.textAlign = goingRight ? 'left' : 'right';
+  var tx = p2.x + (goingRight ? 4 : -4);
+  ctx.fillText(el.text, tx, p2.y);
+  if(sel){
+    var m = ctx.measureText(el.text);
+    var boxX = goingRight ? p2.x+2 : p2.x-2-m.width;
+    ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.strokeRect(boxX, p2.y-13*S.zoom, m.width+4, 15*S.zoom);
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function fitLabel(ft){
+  if(ft.indexOf('custom_')===0){
+    var cf=findCustomFitting(ft);
+    return cf ? cf.label : 'マイ記号';
+  }
+  var m={
+    flange:'FL', fl_gate:'GV(FL)', fl_globe:'GLV(FL)', fl_ball:'BV(FL)', fl_butterfly:'BFV(FL)', fl_check:'CV(FL)', fl_relief:'RV(FL)', fl_solenoid:'SV(FL)', fl_control:'CTV(FL)', fl_handle:'HW(FL)',
+    gate:'GV', globe:'GLV', ball:'BV', butterfly:'BFV', check:'CV', union:'UN', rc:'RC', re:'RE(長基準)', re_short:'RE',
+    cap:'キャップ', fullcoupling:'フルカップリング', plug:'プラグ'
+  };
+  return m[ft]||ft;
+}
+
+// ── ドロワー用ミニアイコン（実際の描画ロジックと同じ形をSVGで再現） ──
+function svgIcon(ft, isIso){
+  var col = PIPE_COLOR;
+  var r = 11;
+  var hasFl = FL_TYPES.indexOf(ft) >= 0;
+  var base = ft.replace(/^fl_/, '');
+  var body = '';
+
+  var s30 = Math.sin(30*Math.PI/180), c30 = Math.cos(30*Math.PI/180);
+
+  function bowtieIso(rr){
+    var h=rr*0.7;
+    var rtx=rr+h*s30, rty=-h*c30, rbx=rr-h*s30, rby=h*c30;
+    var ltx=-rr+h*s30, lty=-h*c30, lbx=-rr-h*s30, lby=h*c30;
+    return '<polygon points="'+ltx+','+lty+' 0,0 '+rtx+','+rty+' '+rbx+','+rby+' 0,0 '+lbx+','+lby+'" fill="#fff" stroke="'+col+'" stroke-width="1.6" stroke-linejoin="round"/>';
+  }
+  function bowtiePlane(rr){
+    return '<path d="M '+(-rr)+' '+(-rr*0.55)+' L '+rr+' '+(rr*0.55)+' L '+rr+' '+(-rr*0.55)+' L '+(-rr)+' '+(rr*0.55)+' Z" fill="#fff" stroke="'+col+'" stroke-width="1.6" stroke-linejoin="round"/>';
+  }
+  function bowtie(rr){ return isIso ? bowtieIso(rr) : bowtiePlane(rr); }
+
+  function flLinesIso(rr){
+    if(!hasFl) return '';
+    var g=rr*0.25, h=(rr+g)*0.75;
+    function fl(cx){
+      return '<line x1="'+(cx+h*s30)+'" y1="'+(-h*c30)+'" x2="'+(cx-h*s30)+'" y2="'+(h*c30)+'" stroke="'+col+'" stroke-width="2.1"/>';
+    }
+    return fl(rr+g)+fl(-(rr+g));
+  }
+  function flLinesPlane(rr){
+    if(!hasFl) return '';
+    var g=rr*0.25;
+    return '<line x1="'+(-rr-g)+'" y1="'+(-rr*0.7)+'" x2="'+(-rr-g)+'" y2="'+(rr*0.7)+'" stroke="'+col+'" stroke-width="2.1"/>'+
+           '<line x1="'+(rr+g)+'" y1="'+(-rr*0.7)+'" x2="'+(rr+g)+'" y2="'+(rr*0.7)+'" stroke="'+col+'" stroke-width="2.1"/>';
+  }
+  function flangeLines(rr){ return isIso ? flLinesIso(rr) : flLinesPlane(rr); }
+
+  if(base === 'flange'){
+    // アイソメ用は30°傾き、平面図用は傾きなし（isIsoで切替。他の記号と統一）
+    var fh = r*0.75;
+    var fs = isIso ? s30 : 0, fc = isIso ? c30 : 1;
+    var fLtx = -r*0.15 + fh*fs, fLty = -fh*fc, fLbx = -r*0.15 - fh*fs, fLby = fh*fc;
+    var fRtx =  r*0.15 + fh*fs, fRty = -fh*fc, fRbx =  r*0.15 - fh*fs, fRby = fh*fc;
+    body = '<rect x="'+(-r*0.95)+'" y="'+(-r*0.85)+'" width="'+(r*1.9)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
+           '<line x1="'+fLtx+'" y1="'+fLty+'" x2="'+fLbx+'" y2="'+fLby+'" stroke="'+col+'" stroke-width="2.2"/>'+
+           '<line x1="'+fRtx+'" y1="'+fRty+'" x2="'+fRbx+'" y2="'+fRby+'" stroke="'+col+'" stroke-width="2.2"/>';
+  } else if(base === 'gate'){
+    body = bowtie(r) + flangeLines(r);
+  } else if(base === 'globe'){
+    body = bowtie(r) + flangeLines(r) + '<circle cx="0" cy="0" r="'+(r*0.22)+'" fill="'+col+'"/>';
+  } else if(base === 'ball'){
+    body = bowtie(r) + flangeLines(r) + '<circle cx="0" cy="0" r="'+(r*0.22)+'" fill="#fff" stroke="'+col+'" stroke-width="1.4"/>';
+  } else if(base === 'butterfly'){
+    // アイソメ用は30°傾き、平面図用は傾きなし（isIsoで切替）
+    var bs = isIso ? s30 : 0, bc = isIso ? c30 : 1;
+    var bl=-r*0.55, br=r*0.55, bh=r*0.62;
+    var bLtx=bl+bh*bs, bLty=-bh*bc, bLbx=bl-bh*bs, bLby=bh*bc;
+    var bRtx=br+bh*bs, bRty=-bh*bc, bRbx=br-bh*bs, bRby=bh*bc;
+    var bmx=(bLbx+bRtx)/2, bmy=(bLby+bRty)/2;
+    body = '<rect x="'+(-r*0.95)+'" y="'+(-r*0.85)+'" width="'+(r*1.9)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
+      '<path d="M '+bLtx+','+bLty+' L '+bLbx+','+bLby+' M '+bRtx+','+bRty+' L '+bRbx+','+bRby+' M '+bLbx+','+bLby+' L '+bRtx+','+bRty+'" fill="none" stroke="'+col+'" stroke-width="1.6" stroke-linecap="round"/>'+
+      '<circle cx="'+bmx+'" cy="'+bmy+'" r="'+(r*0.22)+'" fill="#fff" stroke="'+col+'" stroke-width="1.4"/>'+
+      (hasFl ? flangeLines(r*0.73) : '');
+  } else if(base === 'check'){
+    // アイソメ用は30°傾き、平面図用は傾きなし（isIsoで切替）
+    var cs = isIso ? s30 : 0, cc = isIso ? c30 : 1;
+    var cl=-r*0.55, cr=r*0.55, ch=r*0.62;
+    var cLtx=cl+ch*cs, cLty=-ch*cc, cLbx=cl-ch*cs, cLby=ch*cc;
+    var cRtx=cr+ch*cs, cRty=-ch*cc, cRbx=cr-ch*cs, cRby=ch*cc;
+    body = '<rect x="'+(-r*0.95)+'" y="'+(-r*0.85)+'" width="'+(r*1.9)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
+      '<path d="M '+cLtx+','+cLty+' L '+cLbx+','+cLby+' M '+cRtx+','+cRty+' L '+cRbx+','+cRby+' M '+cLtx+','+cLty+' L '+cRbx+','+cRby+'" fill="none" stroke="'+col+'" stroke-width="1.6" stroke-linecap="round"/>'+
+      (hasFl ? flangeLines(r*0.73) : '')+
+      '<path d="M -3 '+(r*0.95)+' L 3 '+(r*0.95)+' M 1 '+(r*0.95-2)+' L 3 '+(r*0.95)+' L 1 '+(r*0.95+2)+'" fill="none" stroke="'+col+'" stroke-width="1.4"/>';
+  } else if(base === 'relief'){
+    // 安全弁：入口フランジ線＋本体（三角形2つ）＋出口配管線（drawReliefValveと同じ比率）
+    var rv=r*0.82;
+    var rvFlTx=-0.78*rv, rvFlTy=-1.30*rv, rvFlBx=-0.78*rv, rvFlBy=-0.12*rv;
+    var rvT1Ax=-0.55*rv, rvT1Ay=-1.19*rv, rvT1Bx=-0.59*rv, rvT1By=-0.04*rv;
+    var rvPx=0.25*rv, rvPy=-0.14*rv;
+    var rvT2Vx=-0.22*rv, rvT2Vy=0.54*rv, rvT2Bx=0.78*rv, rvT2By=1.11*rv;
+    var rvOSx=-0.22*rv, rvOSy=0.77*rv, rvOEx=0.77*rv, rvOEy=1.30*rv;
+    body = '<path d="M '+rvT1Ax+' '+rvT1Ay+' L '+rvT1Bx+' '+rvT1By+' L '+rvPx+' '+rvPy+' Z" fill="#fff" stroke="'+col+'" stroke-width="1.4" stroke-linejoin="round"/>'+
+      '<path d="M '+rvPx+' '+rvPy+' L '+rvT2Vx+' '+rvT2Vy+' L '+rvT2Bx+' '+rvT2By+' Z" fill="#fff" stroke="'+col+'" stroke-width="1.4" stroke-linejoin="round"/>'+
+      '<path d="M '+rvFlTx+' '+rvFlTy+' L '+rvFlBx+' '+rvFlBy+' M '+rvOSx+' '+rvOSy+' L '+rvOEx+' '+rvOEy+'" fill="none" stroke="'+col+'" stroke-width="1.4" stroke-linecap="round"/>';
+  } else if(base === 'solenoid'){
+    // 電磁弁：弁本体＋フランジ線＋軸線＋傾いたソレノイド箱（枠に収まるよう全体を縮小）
+    var solStemTop = -r*0.9, solBw=r*0.85, solBh=r*0.6;
+    var solInner = bowtie(r) + flangeLines(r) +
+      '<line x1="0" y1="0" x2="0" y2="'+solStemTop+'" stroke="'+col+'" stroke-width="1.6"/>'+
+      '<g transform="translate(0,'+(solStemTop-solBh*0.45)+') rotate(0)">'+
+        '<rect x="'+(-solBw/2)+'" y="'+(-solBh/2)+'" width="'+solBw+'" height="'+solBh+'" fill="#fff" stroke="'+col+'" stroke-width="1.6"/>'+
+      '</g>';
+    body = '<g transform="scale(0.72)">'+solInner+'</g>';
+  } else if(base === 'control'){
+    // 調節弁：軸線はフランジ線と平行、半円は軸線からさらに330°回転（枠に収まるよう全体を縮小）
+    var ctlT = isIso ? (30*Math.PI/180) : 0;
+    var ctlSx = Math.sin(ctlT), ctlSy = -Math.cos(ctlT);
+    var ctlStemLen = r*0.75;
+    var ctlTopX = ctlStemLen*ctlSx, ctlTopY = ctlStemLen*ctlSy;
+    var ctlDomeW=r*1.05, ctlDomeR=ctlDomeW/2, ctlNeckY=-ctlDomeR*0.25;
+    var ctlDomeDeg = (ctlT*180/Math.PI) + 330;
+    var ctlInner = bowtie(r) + flangeLines(r) +
+      '<line x1="0" y1="0" x2="'+ctlTopX+'" y2="'+ctlTopY+'" stroke="'+col+'" stroke-width="1.6"/>'+
+      '<g transform="translate('+ctlTopX+','+ctlTopY+') rotate('+ctlDomeDeg+')">'+
+        '<path d="M '+(-ctlDomeR)+' 0 L '+(-ctlDomeR)+' '+ctlNeckY+' A '+ctlDomeR+' '+ctlDomeR+' 0 0 1 '+ctlDomeR+' '+ctlNeckY+' L '+ctlDomeR+' 0 Z" fill="#fff" stroke="'+col+'" stroke-width="1.6"/>'+
+      '</g>';
+    body = '<g transform="scale(0.72)">'+ctlInner+'</g>';
+  } else if(base === 'handle'){
+    // バルブハンドル：弁本体＋フランジ線＋軸線＋放射状の線（ハンドルを横から見た形）
+    var hdStemTop = -r*0.85, hdSpoke=r*0.5;
+    var hdLines = [0,60,120].map(function(deg){
+      var t=deg*Math.PI/180, dx=Math.sin(t)*hdSpoke, dy=-Math.cos(t)*hdSpoke;
+      return 'M '+(-dx)+' '+(hdStemTop-dy)+' L '+dx+' '+(hdStemTop+dy);
+    }).join(' ');
+    body = bowtie(r) + flangeLines(r) +
+      '<line x1="0" y1="0" x2="0" y2="'+hdStemTop+'" stroke="'+col+'" stroke-width="1.6"/>'+
+      '<path d="'+hdLines+'" stroke="'+col+'" stroke-width="1.6" fill="none"/>';
+  } else if(ft === 'union_new'){
+    // ユニオン：縦3本線・中央長め・30°傾き（アイコン表示はさらに左に30°回転）
+    var us=Math.sin(30*Math.PI/180), uc=Math.cos(30*Math.PI/180);
+    var sep=r*0.28, hi=r*0.33, ho=r*0.82;
+    function uline(cx,hh){ return 'M '+(cx+hh*us)+','+ (-hh*uc)+' L '+(cx-hh*us)+','+(hh*uc); }
+    body = '<g transform="rotate(-30)"><path d="'+uline(-sep,hi)+' '+uline(0,ho)+' '+uline(sep,hi)+'" stroke="'+col+'" stroke-width="1.6" fill="none"/></g>';
+  } else if(base === 'union'){
+    // 六角ニップル→◇菱形
+    var ds=r*0.55;
+    body = '<path d="M 0,-'+ds+' L '+ds+',0 L 0,'+ds+' L -'+ds+',0 Z" fill="#fff" stroke="'+col+'" stroke-width="1.5"/>';
+  } else if(base === 'rc'){
+    // RC：台形のみ（横棒なし）
+    body = '<path d="M -9.4 -6.8 L 9.4 -2.4 L 9.4 2.4 L -9.4 6.8 Z" fill="#fff" stroke="'+col+'" stroke-width="1.5"/>';
+  } else if(base === 're' || base === 're_short'){
+    var reHalfW = r*0.6, reBottomY = r*0.55, reRightTopY = -r*0.55;
+    var reDy = 2*reHalfW*Math.tan(30*Math.PI/180);
+    var reLeftTopY = reRightTopY + reDy;
+    // 短基準（re_short）は小さい方（左側）の中心を基準点(0,0)に合わせるためシフトする
+    var reShift = (base === 're_short') ? reDy/2 : 0;
+    body = '<path d="M '+(-reHalfW)+' '+(reLeftTopY-reShift)+' L '+reHalfW+' '+(reRightTopY-reShift)+' L '+reHalfW+' '+(reBottomY-reShift)+' L '+(-reHalfW)+' '+(reBottomY-reShift)+' Z" fill="#fff" stroke="'+col+'" stroke-width="1.5"/>'+
+      '<circle cx="0" cy="0" r="1.6" fill="'+col+'"/>';
+  } else if(SIMPLE_MARK_TYPES.indexOf(base) >= 0){
+    // 追加記号：平面図用はまっすぐ、アイソメ用は記号全体を30°傾けて表示
+    // キャップ・プラグ：配管に対して直角（90°追加回転）、フルカップリング：配管に対して水平（傾きなし）
+    // アイコン表示のみ、キャップ・プラグはさらに右に30°回転
+    var extraRot = (base === 'cap') ? 150 : (base === 'plug') ? 240 : 0;
+    var tilt = (base === 'fullcoupling' || base === 'cap' || base === 'plug') ? 0 : (isIso ? 30 : 0);
+    var iconTwist = (base === 'cap') ? 120 : (base === 'plug') ? -60 : 0;
+    body = '<g transform="rotate('+(tilt+extraRot+iconTwist)+')">'+simpleMarkSvg(base, col, r)+'</g>';
+  }
+  return '<svg width="30" height="22" viewBox="-17 -13 34 26">'+body+'</svg>';
+}
+
+// 追加記号（キャップ・フルカップリング・プラグ）のSVGパスを生成
+// drawSimpleMark（canvas描画）と同じ形状をSVGで再現する
+var SIMPLE_MARK_TYPES = ['cap','fullcoupling','plug'];
+function simpleMarkSvg(ft, col, r, lwd){
+  var sw = lwd || 1.5;
+  if(ft === 'cap'){
+    var w=r*0.55, h=r*0.5;
+    return '<path d="M 0 '+(-h)+' L '+w+' '+(-h)+' L '+w+' '+h+' L 0 '+h+'" fill="none" stroke="'+col+'" stroke-width="'+sw+'"/>';
+  } else if(ft === 'fullcoupling'){
+    var fw=r*0.42, fh=r*0.4;
+    return '<rect x="'+(-fw)+'" y="'+(-fh)+'" width="'+(fw*2)+'" height="'+(fh*2)+'" fill="#fff" stroke="'+col+'" stroke-width="'+sw+'"/>';
+  } else if(ft === 'plug'){
+    var pw=r*0.42, pyTop=-r*0.28, pyBot=r*0.55;
+    return '<path d="M '+(-pw)+' '+pyTop+' L '+pw+' '+pyTop+' L 0 '+pyBot+' Z" fill="none" stroke="'+col+'" stroke-width="'+sw+'"/>';
+  }
+  return '';
+}
+
+var FL_GROUP_ISO   = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['fl_relief','安全弁'],['fl_solenoid','電磁弁'],['fl_control','調節弁'],['flange','フランジ']];
+var NFL_GROUP_ISO  = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁'],['union_new','ユニオン'],['union','六角ニップル'],['rc','RC'],['re_short','RE'],['cap','キャップ'],['fullcoupling','フルカップリング'],['plug','プラグ']];
+var FL_GROUP_PLAN  = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['flange','フランジ']];
+var NFL_GROUP_PLAN = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁'],['union_new','ユニオン'],['union','六角ニップル'],['rc','RC'],['re_short','RE'],['cap','キャップ'],['fullcoupling','フルカップリング'],['plug','プラグ']];
+
+// 後方互換
+var FL_GROUP = FL_GROUP_ISO;
+var NFL_GROUP = NFL_GROUP_ISO;
+var WELD_GROUP = [
+  ['weld_butt','突合せ溶接'], ['weld_fillet','隅肉溶接']
+];
+
+function weldSvgIcon(wt){
+  var col=PIPE_COLOR;
+  var body='<line x1="-14" y1="0" x2="14" y2="0" stroke="'+col+'" stroke-width="1.6"/>';
+  if(wt==='weld_butt'){
+    body += '<circle cx="0" cy="0" r="3.4" fill="'+col+'"/>';
+  } else {
+    body += '<line x1="0" y1="-6" x2="0" y2="6" stroke="'+col+'" stroke-width="2.2"/>';
+  }
+  return '<svg width="30" height="22" viewBox="-17 -13 34 26">'+body+'</svg>';
+}
+
+// ── 右メニュー（ドロワー）の区分ごと折りたたみ機能 ──
+// 開閉状態はブラウザに保存され、次回このファイルを開いたときも記憶されている。
+var SECTION_STORAGE_KEY = 'pipeiso_collapsed_sections';
+function loadCollapsedSections(){
+  try{ return JSON.parse(localStorage.getItem(SECTION_STORAGE_KEY) || '{}'); }
+  catch(e){ return {}; }
+}
+function saveCollapsedSections(obj){
+  try{ localStorage.setItem(SECTION_STORAGE_KEY, JSON.stringify(obj)); }
+  catch(e){ /* 保存できない環境では何もしない */ }
+}
+function applySectionState(key, collapsed){
+  var cap = key.charAt(0).toUpperCase()+key.slice(1);
+  var el = document.getElementById('sec'+cap);
+  var caret = document.getElementById('caret'+cap);
+  if(!el) return;
+  el.style.display = collapsed ? 'none' : '';
+  if(caret) caret.classList.toggle('collapsed', collapsed);
+}
+function toggleSection(key){
+  var st = loadCollapsedSections();
+  var collapsed = !st[key];
+  st[key] = collapsed;
+  saveCollapsedSections(st);
+  applySectionState(key, collapsed);
+}
+function initCollapsedSections(){
+  var st = loadCollapsedSections();
+  // 'iso'と'plan'は大枠の折りたたみを廃止したため対象外（常に表示）
+  ['weld','isoFl','isoNfl','planFl','planNfl'].forEach(function(key){ applySectionState(key, !!st[key]); });
+}
+
+// ── マイ記号（自作スタンプ）：保存データの読み書き ──────────
+var CUSTOM_FIT_KEY = 'pipeiso_custom_fittings_v1';
+function loadCustomFittings(){
+  try{
+    var arr = JSON.parse(localStorage.getItem(CUSTOM_FIT_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function saveCustomFittingsToStorage(){
+  try{ localStorage.setItem(CUSTOM_FIT_KEY, JSON.stringify(S.customFittings)); }
+  catch(e){ /* 保存できない環境では何もしない */ }
+}
+
+// 自作記号の図形データ（線・四角・円・三角・既存パーツ）を、指定スケールでCanvasパスとして描く共通処理。
+// ctx にすでに strokeStyle / lineWidth / translate・rotate が設定済みの状態で呼ぶこと。
+// col・lwd は「既存パーツ」を描く際にのみ使用する（他の図形はctxRefに既に設定済みの色・太さを使う）。
+function traceCustomShape(ctxRef, shp, sc, col, lwd){
+  if(shp.t==='line'){
+    ctxRef.beginPath();
+    ctxRef.moveTo(shp.x1*sc, shp.y1*sc);
+    ctxRef.lineTo(shp.x2*sc, shp.y2*sc);
+    ctxRef.stroke();
+  } else if(shp.t==='rect'){
+    var rx=Math.min(shp.x1,shp.x2)*sc, ry=Math.min(shp.y1,shp.y2)*sc;
+    var rw=Math.abs(shp.x2-shp.x1)*sc, rh=Math.abs(shp.y2-shp.y1)*sc;
+    ctxRef.beginPath();
+    ctxRef.rect(rx, ry, rw, rh);
+    ctxRef.fillStyle='#ffffff'; ctxRef.fill(); ctxRef.stroke();
+  } else if(shp.t==='circle'){
+    var cx=shp.cx*sc, cy=shp.cy*sc, rr=shp.r*sc;
+    ctxRef.beginPath();
+    ctxRef.arc(cx, cy, rr, 0, Math.PI*2);
+    ctxRef.fillStyle='#ffffff'; ctxRef.fill(); ctxRef.stroke();
+  } else if(shp.t==='triangle'){
+    var tx1=Math.min(shp.x1,shp.x2)*sc, tx2=Math.max(shp.x1,shp.x2)*sc;
+    var ty1=Math.min(shp.y1,shp.y2)*sc, ty2=Math.max(shp.y1,shp.y2)*sc;
+    var midx=(tx1+tx2)/2;
+    ctxRef.beginPath();
+    ctxRef.moveTo(midx, ty1);
+    ctxRef.lineTo(tx2, ty2);
+    ctxRef.lineTo(tx1, ty2);
+    ctxRef.closePath();
+    ctxRef.fillStyle='#ffffff'; ctxRef.fill(); ctxRef.stroke();
+  } else if(shp.t==='part'){
+    ctxRef.save();
+    ctxRef.translate(shp.cx*sc, shp.cy*sc);
+    ctxRef.rotate((shp.rot||0)*Math.PI/180);
+    partDrawCanvas(ctxRef, shp.ft, Math.max(shp.r*sc,1), col||ctxRef.strokeStyle, lwd||ctxRef.lineWidth);
+    ctxRef.restore();
+  }
+}
+// 既存の継手・弁と同じ描画関数を、部品として任意の位置・大きさで描くための共通処理
+// （アイソメ表現＝tiltDeg=30、可動部の角度は「無回転・非鏡像」時の既定値を採用）
+function partDrawCanvas(ctxRef, ft, r, col, lwd){
+  // 個々の描画関数（drawFlange等）はグローバル変数 ctx を直接参照して描画するため、
+  // 「マイ記号」エディタなど本図以外のCanvas(ctxRef)に描く場合は、
+  // 一時的にグローバル ctx をctxRefへ差し替えてから呼び出し、終わったら元に戻す。
+  // （これをしないと、常に本図キャンバスの方に既存パーツが描かれてしまう）
+  var savedCtx = ctx;
+  ctx = ctxRef;
+  try{
+    var hasFl = FL_TYPES.indexOf(ft)>=0;
+    var baseType = ft.replace(/^fl_/,'');
+    var tiltDeg = 30;
+    var neutralAct = relativeLocalAngle(false, 0, 60);
+    if(baseType==='flange'){ drawFlange(r,col,lwd,tiltDeg); }
+    else if(baseType==='gate'){ drawValveBody(r,col,lwd,hasFl,tiltDeg); drawGateMark(r,lwd,col); }
+    else if(baseType==='globe'){ drawValveBody(r,col,lwd,hasFl,tiltDeg); drawGlobeMark(r,lwd,col); }
+    else if(baseType==='ball'){ drawValveBody(r,col,lwd,hasFl,tiltDeg); drawBallMark(r,lwd,col); }
+    else if(baseType==='butterfly'){ drawButterflyValve(r,col,lwd,hasFl,col,tiltDeg); }
+    else if(baseType==='check'){ drawCheckValve(r,col,lwd,hasFl,col,tiltDeg); }
+    else if(baseType==='relief'){ drawReliefValve(r,col,lwd); }
+    else if(baseType==='solenoid'){ drawSolenoidValve(r,col,lwd,tiltDeg,neutralAct); }
+    else if(baseType==='control'){ drawControlValve(r,col,lwd,tiltDeg,neutralAct,330*Math.PI/180); }
+    else if(baseType==='handle'){ drawHandleValve(r,col,lwd,tiltDeg,0); }
+    else if(baseType==='union'){ drawUnion(r,col,lwd); }
+    else if(ft==='union_new'){ drawUnionNew(r,col,lwd,tiltDeg); }
+    else if(ft==='rc'){ drawRC(r,col,lwd); }
+    else if(ft==='re'||ft==='re_short'){ drawRE(r,col,lwd, ft==='re_short'); }
+    else if(SIMPLE_MARK_TYPES.indexOf(ft)>=0){ drawSimpleMark(ft,r,col,lwd,tiltDeg); }
+  } finally {
+    ctx = savedCtx;
+  }
+}
+// 同上のSVG版（既存パーツをSVGパス断片として出力）
+function partBodySvg(ft, r, col, lwd){
+  var hasFl = FL_TYPES.indexOf(ft)>=0;
+  var baseType = ft.replace(/^fl_/,'');
+  var tiltDeg = 30;
+  var neutralAct = relativeLocalAngle(false, 0, 60);
+  if(baseType==='flange'){ return svgFlangeBody(r,col,lwd,tiltDeg); }
+  else if(baseType==='gate'){ return svgValveBodyBody(r,col,lwd,hasFl,tiltDeg); }
+  else if(baseType==='globe'){ return svgValveBodyBody(r,col,lwd,hasFl,tiltDeg)+'<circle cx="0" cy="0" r="'+(r*0.22)+'" fill="'+col+'"/>'; }
+  else if(baseType==='ball'){ return svgValveBodyBody(r,col,lwd,hasFl,tiltDeg)+'<circle cx="0" cy="0" r="'+(r*0.22)+'" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>'; }
+  else if(baseType==='butterfly'){ return svgButterflyBody(r,col,lwd,hasFl,tiltDeg); }
+  else if(baseType==='check'){ return svgCheckBody(r,col,lwd,hasFl,tiltDeg); }
+  else if(baseType==='relief'){ return svgReliefBody(r,col,lwd); }
+  else if(baseType==='solenoid'){ return svgSolenoidBody(r,col,lwd,tiltDeg,neutralAct); }
+  else if(baseType==='control'){ return svgControlBody(r,col,lwd,tiltDeg,neutralAct,330*Math.PI/180); }
+  else if(baseType==='handle'){ return svgHandleBody(r,col,lwd,tiltDeg,0); }
+  else if(baseType==='union'){ return svgUnionBody(r,col,lwd); }
+  else if(ft==='union_new'){ return svgUnionNewBody(r,col,lwd,tiltDeg); }
+  else if(ft==='rc'){ return svgRCBody(r,col,lwd); }
+  else if(ft==='re'||ft==='re_short'){ return svgREBody(r,col,lwd, ft==='re_short'); }
+  else if(SIMPLE_MARK_TYPES.indexOf(ft)>=0){ return svgSimpleMarkWrapped(ft,r,col,lwd,tiltDeg); }
+  return '';
+}
+// 自作記号のSVGパス断片を生成（アイコン・本図・エクスポートで共用）
+function customShapeSvg(shp, sc, col, lwd){
+  if(shp.t==='line'){
+    return '<line x1="'+(shp.x1*sc)+'" y1="'+(shp.y1*sc)+'" x2="'+(shp.x2*sc)+'" y2="'+(shp.y2*sc)+'" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linecap="round"/>';
+  } else if(shp.t==='rect'){
+    var rx=Math.min(shp.x1,shp.x2)*sc, ry=Math.min(shp.y1,shp.y2)*sc;
+    var rw=Math.abs(shp.x2-shp.x1)*sc, rh=Math.abs(shp.y2-shp.y1)*sc;
+    return '<rect x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  } else if(shp.t==='circle'){
+    return '<circle cx="'+(shp.cx*sc)+'" cy="'+(shp.cy*sc)+'" r="'+(shp.r*sc)+'" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  } else if(shp.t==='triangle'){
+    var tx1=Math.min(shp.x1,shp.x2)*sc, tx2=Math.max(shp.x1,shp.x2)*sc;
+    var ty1=Math.min(shp.y1,shp.y2)*sc, ty2=Math.max(shp.y1,shp.y2)*sc;
+    var midx=(tx1+tx2)/2;
+    return '<path d="M '+midx+' '+ty1+' L '+tx2+' '+ty2+' L '+tx1+' '+ty2+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round"/>';
+  } else if(shp.t==='part'){
+    return '<g transform="translate('+(shp.cx*sc)+' '+(shp.cy*sc)+') rotate('+(shp.rot||0)+')">'+partBodySvg(shp.ft, Math.max(shp.r*sc,1), col, lwd)+'</g>';
+  }
+  return '';
+}
+function findCustomFitting(ft){
+  for(var i=0;i<S.customFittings.length;i++){ if(S.customFittings[i].id===ft) return S.customFittings[i]; }
+  return null;
+}
+// メインキャンバスに自作記号を描画（drawFitから呼ばれる）。r・lwdは他の継手と同じ単位。
+function drawCustomFitting(ft, r, col, lwd){
+  var data = findCustomFitting(ft);
+  if(!data) return;
+  var sc = r/34;
+  ctx.save();
+  ctx.strokeStyle = col;
+  ctx.lineWidth = lwd;
+  ctx.lineJoin = 'round';
+  data.shapes.forEach(function(shp){ traceCustomShape(ctx, shp, sc, col, lwd); });
+  ctx.restore();
+}
+// ドロワーのミニアイコン用SVG（他の継手のsvgIconと同じ枠サイズで返す）
+function customFittingSvgIcon(ft){
+  var data = findCustomFitting(ft);
+  if(!data) return '<svg width="30" height="22" viewBox="-17 -13 34 26"></svg>';
+  var sc = 11/34;
+  var body = data.shapes.map(function(shp){ return customShapeSvg(shp, sc, PIPE_COLOR, 1.6); }).join('');
+  return '<svg width="30" height="22" viewBox="-17 -13 34 26">'+body+'</svg>';
+}
+// 本図SVGエクスポート用（fittingSvgMarkupから呼ばれる）
+function customFittingSvgMarkup(ft, r, col, lwd){
+  var data = findCustomFitting(ft);
+  if(!data) return '';
+  var sc = r/34;
+  return data.shapes.map(function(shp){ return customShapeSvg(shp, sc, col, lwd); }).join('');
+}
+// ドロワーの「マイ記号」グリッドを再構築
+function buildCustomGrid(){
+  var el = document.getElementById('customGrid');
+  if(!el) return;
+  if(!S.customFittings.length){ el.innerHTML=''; return; }
+  el.innerHTML = S.customFittings.map(function(f){
+    return '<button class="fi" onclick="setFT(\''+f.id+'\')">'+customFittingSvgIcon(f.id)+'<span>'+f.label+'</span></button>';
+  }).join('');
+}
+
+function buildFitGrids(){
+  var flEl   = document.getElementById('flGrid');
+  var nflEl  = document.getElementById('nflGrid');
+  var flPlEl = document.getElementById('flGridPlan');
+  var nflPlEl= document.getElementById('nflGridPlan');
+  var weldEl = document.getElementById('weldGrid');
+  flEl.innerHTML = FL_GROUP_ISO.map(function(p){
+    return '<button class="fi" onclick="setFT(\''+p[0]+'\')">'+svgIcon(p[0],true)+'<span>'+p[1]+'</span></button>';
+  }).join('');
+  nflEl.innerHTML = NFL_GROUP_ISO.map(function(p){
+    return '<button class="fi" onclick="setFT(\''+p[0]+'\')">'+svgIcon(p[0],true)+'<span>'+p[1]+'</span></button>';
+  }).join('');
+  if(flPlEl) flPlEl.innerHTML = FL_GROUP_PLAN.map(function(p){
+    return '<button class="fi" onclick="setFT(\''+p[0]+'\',true)">'+svgIcon(p[0],false)+'<span>'+p[1]+'</span></button>';
+  }).join('');
+  if(nflPlEl) nflPlEl.innerHTML = NFL_GROUP_PLAN.map(function(p){
+    return '<button class="fi" onclick="setFT(\''+p[0]+'\',true)">'+svgIcon(p[0],false)+'<span>'+p[1]+'</span></button>';
+  }).join('');
+  weldEl.innerHTML = WELD_GROUP.map(function(p){
+    return '<button class="fi" onclick="setWeldTool(\''+p[0]+'\')">'+weldSvgIcon(p[0])+'<span>'+p[1]+'</span></button>';
+  }).join('');
+  buildCustomGrid();
+}
+
+// ── 共通：弁ボディ（▷◁）＋オプションフランジ線 ───
+function drawValveBody(r, col, lwd, hasFl, tiltDeg){
+  // 辺を垂直線からtiltDeg回転させた蝶ネクタイ形（既定30°=アイソメ用、平面図用は0°）
+  // 垂直線の上下端点 (0, -h) (0, h) を中心点(r, 0)と(-r, 0)を軸に回転
+  var h = r * 0.7;
+  var rad30 = (tiltDeg===undefined ? 30 : tiltDeg) * Math.PI / 180;
+  var cos30 = Math.cos(rad30), sin30 = Math.sin(rad30);
+
+  // 右辺の上端・下端（中心点(r,0)を軸に垂直線端点を回転）
+  var rTop = { x: r + (-h)*(-sin30), y: 0 + (-h)*cos30 }; // (r,0) + rot30(0,-h)
+  var rBot = { x: r + ( h)*(-sin30), y: 0 + ( h)*cos30 }; // (r,0) + rot30(0,+h)
+  // 左辺の上端・下端（中心点(-r,0)を軸に垂直線端点を回転）
+  var lTop = { x:-r + (-h)*(-sin30), y: 0 + (-h)*cos30 };
+  var lBot = { x:-r + ( h)*(-sin30), y: 0 + ( h)*cos30 };
+
+  // 白塗りクリップ（背景の配管線を隠す）
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(rTop.x, rTop.y);
+  ctx.lineTo(rBot.x, rBot.y);
+  ctx.closePath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(lTop.x, lTop.y);
+  ctx.lineTo(lBot.x, lBot.y);
+  ctx.closePath();
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.restore();
+
+  // 蝶ネクタイ形（左右三角を中心で結ぶ）
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(lTop.x, lTop.y);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(rTop.x, rTop.y);
+  ctx.lineTo(rBot.x, rBot.y);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(lBot.x, lBot.y);
+  ctx.closePath();
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.strokeStyle = col;
+  ctx.lineWidth = lwd;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+
+  // フランジ縦線（同じ30°回転の斜め線）
+  if(hasFl){
+    var flGap = r * 0.25;
+    var fh = h * 1.05;
+    // 右フランジ線（x=r+flGap を軸に垂直線を30°回転）
+    var rfTop = { x: r+flGap + (-fh)*(-sin30), y: (-fh)*cos30 };
+    var rfBot = { x: r+flGap + ( fh)*(-sin30), y: ( fh)*cos30 };
+    // 左フランジ線
+    var lfTop = { x:-(r+flGap) + (-fh)*(-sin30), y: (-fh)*cos30 };
+    var lfBot = { x:-(r+flGap) + ( fh)*(-sin30), y: ( fh)*cos30 };
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = lwd * 1.3;
+    ctx.beginPath();
+    ctx.moveTo(rfTop.x, rfTop.y); ctx.lineTo(rfBot.x, rfBot.y);
+    ctx.moveTo(lfTop.x, lfTop.y); ctx.lineTo(lfBot.x, lfBot.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── ゲート弁：ボディのみ（中央線なし） ────────────
+function drawGateMark(r, lwd, col){
+  // 表示なし（▷◁本体のみで表現）
+}
+
+// ── グローブ弁：中央●（黒丸） ──────────────────
+function drawGlobeMark(r, lwd, col){
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.arc(0, 0, r*0.22, 0, Math.PI*2);
+  ctx.fill();
+}
+
+// ── ボール弁：中央○（白抜き丸） ────────────────
+function drawBallMark(r, lwd, col){
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = col;
+  ctx.lineWidth = lwd;
+  ctx.beginPath();
+  ctx.arc(0, 0, r*0.22, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 傾き用ヘルパー：垂直線の端点を指定中心x座標でtiltDeg回転
+// tiltDeg省略時は30°（アイソメ用）。平面図用は0°を渡してまっすぐ描画する。
+function rot30pt(cx, h, tiltDeg){ // cx=中心X、h=半高さ → {top, bot}
+  var t = (tiltDeg===undefined ? 30 : tiltDeg) * Math.PI/180;
+  var s = Math.sin(t), c = Math.cos(t);
+  return {
+    tx: cx + h*s, ty: -h*c,
+    bx: cx - h*s, by:  h*c
+  };
+}
+
+// 配管に対する相対角度theta（度・反時計回りを正）を保ちつつ、画面上で必ず上側に来るよう
+// 部品のローカル回転角（ラジアン）を計算する共通関数。
+// ※配管の角度(A)自体は呼び出し側（drawFit）の外側回転で別途適用されるため、戻り値には含めない。
+// ※判定用の計算はすべて「度」のまま行い、最後にラジアンへ変換する（単位混同バグ防止）。
+function relativeLocalAngle(isMirror, angDeg, theta){
+  var tBase = 90 - theta;
+  var testDeg = isMirror ? (tBase - angDeg) : (tBase + angDeg); // 配管の角度を含めた最終画面角度をテスト
+  var flip = Math.cos(testDeg * Math.PI/180) < 0;
+  var localDeg = flip ? (tBase + 180) : tBase;
+  return localDeg * Math.PI/180;
+}
+
+// ── バタ弁：逆N型（左右の縦線＋左下→右上の斜め線）＋中央○（チャッキ弁のN型を反転） ──
+function drawButterflyValve(r, col, lwd, hasFl, drawCol, tiltDeg){
+  var left = -r * 0.55;
+  var right = r * 0.55;
+  var h = r * 0.62;
+  var L=rot30pt(left,h,tiltDeg), R=rot30pt(right,h,tiltDeg);
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-r*0.95, -r*0.85, r*1.9, r*1.7);
+  ctx.restore();
+
+  ctx.strokeStyle=drawCol; ctx.lineWidth=lwd;
+  ctx.beginPath();
+  ctx.moveTo(L.tx,L.ty); ctx.lineTo(L.bx,L.by);   // 左縦線
+  ctx.moveTo(R.tx,R.ty); ctx.lineTo(R.bx,R.by);   // 右縦線
+  ctx.moveTo(L.bx,L.by); ctx.lineTo(R.tx,R.ty);   // 逆N：左下→右上の斜め線
+  ctx.stroke();
+
+  // 中央の弁体（○）：斜め線の中点に配置
+  var mx=(L.bx+R.tx)/2, my=(L.by+R.ty)/2;
+  ctx.save();
+  ctx.fillStyle='#ffffff';
+  ctx.strokeStyle=drawCol;
+  ctx.lineWidth=lwd;
+  ctx.beginPath();
+  ctx.arc(mx,my,r*0.22,0,Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  if(hasFl){
+    var LF=rot30pt(left-r*0.18,h,tiltDeg), RF=rot30pt(right+r*0.18,h,tiltDeg);
+    ctx.lineWidth=lwd*1.3;
+    ctx.beginPath();
+    ctx.moveTo(LF.tx,LF.ty); ctx.lineTo(LF.bx,LF.by);
+    ctx.moveTo(RF.tx,RF.ty); ctx.lineTo(RF.bx,RF.by);
+    ctx.stroke();
+  }
+}
+
+function drawCheckValve(r, col, lwd, hasFl, drawCol, tiltDeg){
+  var left = -r * 0.55;
+  var right = r * 0.55;
+  var h = r * 0.62;
+  var L=rot30pt(left,h,tiltDeg), R=rot30pt(right,h,tiltDeg);
+  ctx.save();
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(-r*0.95, -r*0.85, r*1.9, r*1.7);
+  ctx.restore();
+
+  // |▷◁|の内側（｜と▷◁の間）も白塗り：実際の輪郭（L,R）で塗りつぶす
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(L.tx,L.ty);
+  ctx.lineTo(R.tx,R.ty);
+  ctx.lineTo(R.bx,R.by);
+  ctx.lineTo(L.bx,L.by);
+  ctx.closePath();
+  ctx.fillStyle='#ffffff';
+  ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle=drawCol; ctx.lineWidth=lwd;
+  ctx.beginPath();
+  ctx.moveTo(L.tx,L.ty); ctx.lineTo(L.bx,L.by);
+  ctx.moveTo(R.tx,R.ty); ctx.lineTo(R.bx,R.by);
+  ctx.moveTo(L.tx,L.ty);
+  ctx.lineTo(R.bx,R.by);
+  ctx.stroke();
+
+  if(hasFl){
+    var LF=rot30pt(left-r*0.18,h,tiltDeg), RF=rot30pt(right+r*0.18,h,tiltDeg);
+    ctx.lineWidth=lwd*1.3;
+    ctx.beginPath();
+    ctx.moveTo(LF.tx,LF.ty); ctx.lineTo(LF.bx,LF.by);
+    ctx.moveTo(RF.tx,RF.ty); ctx.lineTo(RF.bx,RF.by);
+    ctx.stroke();
+  }
+
+  // 流れ方向の矢印
+  ctx.lineWidth=lwd;
+  ctx.beginPath();
+  ctx.moveTo(-r*0.3,r*0.95); ctx.lineTo(r*0.3,r*0.95);
+  ctx.moveTo(r*0.08,r*0.95-r*0.18); ctx.lineTo(r*0.3,r*0.95); ctx.lineTo(r*0.08,r*0.95+r*0.18);
+  ctx.stroke();
+}
+
+// ── 安全弁（アイソメ・フランジ付のみ）：入口フランジ線＋本体（三角形2つ）＋出口配管線 ──
+function drawReliefValve(r, col, lwd){
+  var flTopX=-0.78*r, flTopY=-1.30*r, flBotX=-0.78*r, flBotY=-0.12*r;
+  var t1AX=-0.55*r, t1AY=-1.19*r, t1BX=-0.59*r, t1BY=-0.04*r;
+  var pX=0.25*r, pY=-0.14*r;
+  var t2VX=-0.22*r, t2VY=0.54*r, t2BX=0.78*r, t2BY=1.11*r;
+  var outSX=-0.22*r, outSY=0.77*r, outEX=0.77*r, outEY=1.30*r;
+
+  // 上部フランジ線を少し上に平行移動する微調整量（下にはみ出す分を吸収）
+  var flVertAdjust = 0.15*r;
+  flTopY -= flVertAdjust; flBotY -= flVertAdjust;
+
+  // フランジ側（上）の三角形を、下の三角形との接合点(pX,pY)を軸に回転（現在は補正の結果0°）
+  var relRot = 0*Math.PI/180;
+  var relCos = Math.cos(relRot), relSin = Math.sin(relRot);
+  function rotAroundP(x,y){
+    var dx=x-pX, dy=y-pY;
+    return { x: pX + dx*relCos - dy*relSin, y: pY + dx*relSin + dy*relCos };
+  }
+  var t1A = rotAroundP(t1AX,t1AY);
+  var t1B = rotAroundP(t1BX,t1BY);
+
+  // 上部フランジ線：三角形とは切り離し、フランジ線だけ独立して傾ける（現在1°時計回り）
+  var flRot = 1*Math.PI/180;
+  var flCos = Math.cos(flRot), flSin = Math.sin(flRot);
+  var flLen = (flBotY - flTopY) / flCos;
+  var flTop = { x: flBotX + flLen*flSin, y: flBotY - flLen*flCos };
+
+  // 配管への接続点を「下のフランジ（出口線）の中点」に変更するため、全体をシフトする
+  var shiftX = (outSX+outEX)/2, shiftY = (outSY+outEY)/2;
+  function sh(p){ return { x: p.x - shiftX, y: p.y - shiftY }; }
+  t1A = sh(t1A); t1B = sh(t1B);
+  var P = sh({x:pX,y:pY});
+  flTop = sh(flTop);
+  var flBot = sh({x:flBotX,y:flBotY});
+  var t2V = sh({x:t2VX,y:t2VY});
+  var t2B = sh({x:t2BX,y:t2BY});
+  var outS = sh({x:outSX,y:outSY});
+  var outE = sh({x:outEX,y:outEY});
+
+  ctx.save();
+  ctx.fillStyle='#ffffff';
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineJoin='round';
+
+  ctx.beginPath();
+  ctx.moveTo(t1A.x,t1A.y); ctx.lineTo(t1B.x,t1B.y); ctx.lineTo(P.x,P.y); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(P.x,P.y); ctx.lineTo(t2V.x,t2V.y); ctx.lineTo(t2B.x,t2B.y); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(flTop.x,flTop.y); ctx.lineTo(flBot.x,flBot.y);
+  ctx.moveTo(outS.x,outS.y); ctx.lineTo(outE.x,outE.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ── 電磁弁：弁本体（▷◁＋フランジ線）＋軸線＋ソレノイド箱（傾いた四角） ──
+// 箱は常に画面上で上向き（配管を描いた向きに関係なく一定）。
+// 箱自体は平行四辺形：左右の辺はフランジ線と同じ傾き、上下の辺は水平。
+function drawSolenoidValve(r, col, lwd, tiltDeg, actAng){
+  drawValveBody(r, col, lwd, true, tiltDeg); // 本体・フランジ線はゲート弁等と共通
+  ctx.save();
+  var t = actAng||0; // 呼び出し側で確定した最終ローカル角度（tiltDegには依存しない）
+  var e2x = Math.sin(t), e2y = -Math.cos(t);
+  var stemLen = r*1.0, bw=r*0.9, bh=r*0.62;
+  var stemTopX = stemLen*e2x, stemTopY = stemLen*e2y;
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(0,0); ctx.lineTo(stemTopX, stemTopY);
+  ctx.stroke();
+
+  var boxDist = stemLen + bh*0.45;
+  var boxCx = boxDist*e2x, boxCy = boxDist*e2y;
+  var hw = bw/2, hh = bh/2;
+  var bTL = { x: boxCx - hw + hh*e2x, y: boxCy + hh*e2y };
+  var bTR = { x: boxCx + hw + hh*e2x, y: boxCy + hh*e2y };
+  var bBR = { x: boxCx + hw - hh*e2x, y: boxCy - hh*e2y };
+  var bBL = { x: boxCx - hw - hh*e2x, y: boxCy - hh*e2y };
+  ctx.fillStyle='#ffffff';
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(bTL.x,bTL.y); ctx.lineTo(bTR.x,bTR.y); ctx.lineTo(bBR.x,bBR.y); ctx.lineTo(bBL.x,bBL.y); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ── 調節弁：弁本体（▷◁＋フランジ線）＋軸線＋ダイヤフラム部（半円ドーム） ──
+// 軸線・頭部はフランジ線と同じ傾き（tiltDeg：アイソメ用30°／平面図用0°）で描く
+function drawControlValve(r, col, lwd, tiltDeg, stemAng, domeExtraRad){
+  drawValveBody(r, col, lwd, true, tiltDeg);
+  // 軸線（直線部分）：stemAngの向きに配置
+  var sx = Math.sin(stemAng||0), sy = -Math.cos(stemAng||0);
+  var stemLen = r*0.85;
+  var topX = stemLen*sx, topY = stemLen*sy;
+  ctx.save();
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(0,0); ctx.lineTo(topX, topY);
+  ctx.stroke();
+
+  // 半円（ダイヤフラム）：軸線の先端位置に、軸線の角度＋追加角度（domeExtraRad）で配置
+  ctx.translate(topX, topY);
+  ctx.rotate((stemAng||0) + (domeExtraRad||0));
+  var domeW=r*1.15, domeR=domeW/2, neckY=-domeR*0.25;
+  ctx.fillStyle='#ffffff';
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(-domeR, 0);
+  ctx.lineTo(-domeR, neckY);
+  ctx.arc(0, neckY, domeR, Math.PI, 0, false);
+  ctx.lineTo(domeR, 0);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ── バルブハンドル：軸線＋放射状の線（手動ハンドルを横から見た形） ──
+function drawHandleValve(r, col, lwd, tiltDeg, actAng){
+  drawValveBody(r, col, lwd, true, tiltDeg);
+  ctx.save();
+  ctx.rotate(actAng||0);
+  var stemLen = r*0.85, topY = -stemLen, spoke = r*0.5;
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(0,0); ctx.lineTo(0, topY);
+  ctx.stroke();
+
+  ctx.save();
+  ctx.translate(0, topY);
+  ctx.beginPath();
+  [0, 60, 120].forEach(function(deg){
+    var t = deg * Math.PI/180;
+    var dx = Math.sin(t)*spoke, dy = -Math.cos(t)*spoke;
+    ctx.moveTo(-dx, -dy); ctx.lineTo(dx, dy);
+  });
+  ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+}
+
+// ── フランジ単体：二重縦線（30°傾き） ───────────────
+function drawFlange(r, col, lwd, tiltDeg){
+  var h = r*0.75;
+  var L = rot30pt(-r*0.15, h, tiltDeg), R = rot30pt(r*0.15, h, tiltDeg);
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(L.tx,L.ty); ctx.lineTo(R.tx,R.ty); ctx.lineTo(R.bx,R.by); ctx.lineTo(L.bx,L.by);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = col; ctx.lineWidth = lwd * 1.4;
+  ctx.beginPath();
+  ctx.moveTo(L.tx,L.ty); ctx.lineTo(L.bx,L.by);
+  ctx.moveTo(R.tx,R.ty); ctx.lineTo(R.bx,R.by);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ── プラントノース（方位マーク）：縦の軸線＋矢じり（「4」形）＋基準横線 ──
+// 配置点（wx,wy）は下側の長い横線の中心。上向き（角度0）が既定の向き。
+function northArrowPoints(u){
+  return {
+    top:      {x: 0,      y: -2.8*u},
+    arrowL:   {x: -0.5*u, y: -1.6*u},
+    tickR:    {x: 0.35*u, y: -1.6*u},
+    crossL:   {x: -1.2*u, y: 0},
+    crossR:   {x: 1.3*u,  y: 0},
+    bottom:   {x: 0,      y: 3.2*u}
+  };
+}
+function drawNorthArrow(el, sel){
+  var sp = w2s(el.wx, el.wy);
+  var col = sel ? '#d32f2f' : (el.color||PIPE_COLOR);
+  var u = 16 * S.zoom * (el.scale||1);
+  var lwd = 2 * S.zoom;
+  var p = northArrowPoints(u);
+  ctx.save();
+  ctx.translate(sp.x, sp.y);
+  ctx.rotate((el.angle||0) * Math.PI/180);
+  if(el.mirror) ctx.scale(-1,1);
+  ctx.strokeStyle = col; ctx.lineWidth = lwd; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(p.top.x, p.top.y);       ctx.lineTo(p.bottom.x, p.bottom.y); // 縦の軸線
+  ctx.moveTo(p.top.x, p.top.y);       ctx.lineTo(p.arrowL.x, p.arrowL.y); // 矢じりの斜め線
+  ctx.moveTo(p.arrowL.x, p.arrowL.y); ctx.lineTo(p.tickR.x, p.tickR.y);   // 矢じりの横線
+  ctx.moveTo(p.crossL.x, p.crossL.y); ctx.lineTo(p.crossR.x, p.crossR.y); // 下の基準横線
+  ctx.stroke();
+  if(sel){
+    ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.strokeRect(-1.5*u, -3.0*u, 3.0*u, 6.4*u);
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+function northArrowSvgMarkup(el){
+  var sp = w2s(el.wx, el.wy);
+  var col = el.color||PIPE_COLOR;
+  var u = 16 * S.zoom * (el.scale||1);
+  var lwd = 2 * S.zoom;
+  var p = northArrowPoints(u);
+  var d = 'M '+p.top.x+' '+p.top.y+' L '+p.bottom.x+' '+p.bottom.y+' '+
+          'M '+p.top.x+' '+p.top.y+' L '+p.arrowL.x+' '+p.arrowL.y+' '+
+          'M '+p.arrowL.x+' '+p.arrowL.y+' L '+p.tickR.x+' '+p.tickR.y+' '+
+          'M '+p.crossL.x+' '+p.crossL.y+' L '+p.crossR.x+' '+p.crossR.y;
+  return '<g transform="translate('+sp.x.toFixed(2)+' '+sp.y.toFixed(2)+') rotate('+(el.angle||0)+')'+(el.mirror?' scale(-1,1)':'')+'">'+
+    '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linecap="round" stroke-linejoin="round"/></g>';
+}
+
+// ── 注記マーク（◯△□雲・矢印・番号バルーン）：レビュー指摘や変更範囲の目印用 ──
+// 雲マーク（改訂雲）の輪郭：円周上に小さい円を並べて重ねることで、定番の「もこもこ」した縁を表現する
+function cloudBumps(r){
+  var N = 8;
+  var bumpR = r * Math.PI / N * 1.15;
+  var pts = [];
+  for(var i=0;i<N;i++){
+    var ang = (i/N)*Math.PI*2 - Math.PI/2;
+    pts.push({cx:r*Math.cos(ang), cy:r*Math.sin(ang), br:bumpR});
+  }
+  return pts;
+}
+function markerShapePoints(r){
+  return {
+    triangle: [{x:0,y:-r*1.15},{x:r*1.0,y:r*0.75},{x:-r*1.0,y:r*0.75}],
+    arrowShaftFrom: {x:-r*1.1,y:0}, arrowShaftTo: {x:r*0.7,y:0},
+    arrowTip: {x:r*1.3,y:0}, arrowWingA: {x:r*0.6,y:-r*0.5}, arrowWingB: {x:r*0.6,y:r*0.5}
+  };
+}
+function drawMarker(el, sel){
+  var sp = w2s(el.wx, el.wy);
+  var r = 15 * S.zoom * (el.scale||1);
+  var lwd = 2 * S.zoom;
+  var col = sel ? '#b71c1c' : (el.color||'#d32f2f');
+  var pts = markerShapePoints(r);
+  ctx.save();
+  ctx.translate(sp.x, sp.y);
+  ctx.rotate((el.angle||0) * Math.PI/180);
+  ctx.strokeStyle = col; ctx.lineWidth = lwd; ctx.lineCap='round'; ctx.lineJoin='round';
+  if(el.mtype==='circle'){
+    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+  } else if(el.mtype==='square'){
+    ctx.strokeRect(-r,-r,r*2,r*2);
+  } else if(el.mtype==='triangle'){
+    ctx.beginPath();
+    ctx.moveTo(pts.triangle[0].x,pts.triangle[0].y);
+    ctx.lineTo(pts.triangle[1].x,pts.triangle[1].y);
+    ctx.lineTo(pts.triangle[2].x,pts.triangle[2].y);
+    ctx.closePath(); ctx.stroke();
+  } else if(el.mtype==='cloud'){
+    cloudBumps(r).forEach(function(b){
+      ctx.beginPath(); ctx.arc(b.cx,b.cy,b.br,0,Math.PI*2); ctx.stroke();
+    });
+  } else if(el.mtype==='arrow'){
+    ctx.beginPath();
+    ctx.moveTo(pts.arrowShaftFrom.x,pts.arrowShaftFrom.y);
+    ctx.lineTo(pts.arrowShaftTo.x,pts.arrowShaftTo.y);
+    ctx.moveTo(pts.arrowTip.x,pts.arrowTip.y);
+    ctx.lineTo(pts.arrowWingA.x,pts.arrowWingA.y);
+    ctx.moveTo(pts.arrowTip.x,pts.arrowTip.y);
+    ctx.lineTo(pts.arrowWingB.x,pts.arrowWingB.y);
+    ctx.stroke();
+  } else if(el.mtype==='balloon'){
+    ctx.fillStyle='#ffffff';
+    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=col; ctx.font='bold '+(13*S.zoom*(el.scale||1))+'px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(el.num!==undefined?el.num:''), 0, 1);
+  }
+  if(sel){
+    ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.strokeRect(-r*1.35,-r*1.35,r*2.7,r*2.7);
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+function markerSvgMarkup(el){
+  var sp = w2s(el.wx, el.wy);
+  var r = 15 * S.zoom * (el.scale||1);
+  var lwd = 2 * S.zoom;
+  var col = el.color||'#d32f2f';
+  var pts = markerShapePoints(r);
+  var body = '';
+  if(el.mtype==='circle'){
+    body = '<circle cx="0" cy="0" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  } else if(el.mtype==='square'){
+    body = '<rect x="'+(-r)+'" y="'+(-r)+'" width="'+(r*2)+'" height="'+(r*2)+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  } else if(el.mtype==='triangle'){
+    body = '<path d="M '+pts.triangle[0].x+' '+pts.triangle[0].y+' L '+pts.triangle[1].x+' '+pts.triangle[1].y+' L '+pts.triangle[2].x+' '+pts.triangle[2].y+' Z" fill="none" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round"/>';
+  } else if(el.mtype==='cloud'){
+    body = cloudBumps(r).map(function(b){
+      return '<circle cx="'+b.cx+'" cy="'+b.cy+'" r="'+b.br+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+    }).join('');
+  } else if(el.mtype==='arrow'){
+    body = '<path d="M '+pts.arrowShaftFrom.x+' '+pts.arrowShaftFrom.y+' L '+pts.arrowShaftTo.x+' '+pts.arrowShaftTo.y+' '+
+      'M '+pts.arrowTip.x+' '+pts.arrowTip.y+' L '+pts.arrowWingA.x+' '+pts.arrowWingA.y+' '+
+      'M '+pts.arrowTip.x+' '+pts.arrowTip.y+' L '+pts.arrowWingB.x+' '+pts.arrowWingB.y+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linecap="round"/>';
+  } else if(el.mtype==='balloon'){
+    body = '<circle cx="0" cy="0" r="'+r+'" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>'+
+      '<text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif" font-weight="bold" font-size="'+(13*S.zoom*(el.scale||1))+'" fill="'+col+'">'+escSvgText(el.num!==undefined?el.num:'')+'</text>';
+  }
+  return '<g transform="translate('+sp.x.toFixed(2)+' '+sp.y.toFixed(2)+') rotate('+(el.angle||0)+')">'+body+'</g>';
+}
+
+// ── 六角ニップル→◇菱形に変更 ─────────────────────
+function drawUnion(r, col, lwd){
+  ctx.save();
+  ctx.fillStyle='#ffffff'; ctx.strokeStyle=col; ctx.lineWidth=lwd;
+  ctx.beginPath();
+  ctx.moveTo(0,-r*0.55); ctx.lineTo(r*0.55,0); ctx.lineTo(0,r*0.55); ctx.lineTo(-r*0.55,0);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ── ユニオン：縦3本線（中央長め）＋30°傾き ─────────
+function drawUnionNew(r, col, lwd, tiltDeg){
+  var t=(tiltDeg===undefined?30:tiltDeg)*Math.PI/180;
+  var s=Math.sin(t), c=Math.cos(t);
+  var hi=r*0.33, ho=r*0.82; // 左右は短く、中央は長め
+  function vline(cx, hh){
+    return { tx:cx+hh*s, ty:-hh*c, bx:cx-hh*s, by:hh*c };
+  }
+  var sep=r*0.28; // 3本の間隔
+  var L=vline(-sep,hi), C=vline(0,ho), R=vline(sep,hi);
+
+  // 白背景で配管線を隠す
+  ctx.save(); ctx.fillStyle='#ffffff';
+  ctx.fillRect(-sep*2,-ho,sep*4,ho*2);
+  ctx.restore();
+
+  ctx.strokeStyle=col; ctx.lineWidth=lwd;
+  ctx.beginPath();
+  ctx.moveTo(L.tx,L.ty); ctx.lineTo(L.bx,L.by); // 左
+  ctx.moveTo(C.tx,C.ty); ctx.lineTo(C.bx,C.by); // 中央（長め）
+  ctx.moveTo(R.tx,R.ty); ctx.lineTo(R.bx,R.by); // 右
+  ctx.stroke();
+}
+
+// ── RC：対称台形のみ ──────────────────────────────
+function drawRC(r, col, lwd){
+  ctx.save();
+  ctx.fillStyle='#ffffff'; ctx.strokeStyle=col; ctx.lineWidth=lwd;
+  ctx.beginPath();
+  ctx.moveTo(-r*0.85,-r*0.62); ctx.lineTo(r*0.85,-r*0.22);
+  ctx.lineTo(r*0.85,r*0.22);   ctx.lineTo(-r*0.85,r*0.62);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ── RE：直角三角形の30°側をちょん切った形（底辺フラット・右辺垂直・上辺30°斜め） ──
+function drawRE(r, col, lwd, shortBase){
+  var halfW = r * 0.6;
+  var bottomY = r * 0.55;
+  var rightTopY = -r * 0.55;
+  var dy = 2 * halfW * Math.tan(30 * Math.PI / 180);
+  var leftTopY = rightTopY + dy;
+  // 短基準（shortBase）は小さい方（左側）の中心を基準点(0,0)＝配管中心線に合わせるためシフトする
+  var shift = shortBase ? dy/2 : 0;
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = col; ctx.lineWidth = lwd;
+  ctx.beginPath();
+  ctx.moveTo(-halfW, leftTopY-shift);
+  ctx.lineTo( halfW, rightTopY-shift);
+  ctx.lineTo( halfW, bottomY-shift);
+  ctx.lineTo(-halfW, bottomY-shift);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ── 追加記号（キャップ・フルカップリング・プラグ） ─────────────
+// 平面図用はまっすぐ、アイソメ用は記号全体を30°傾けて描く（tiltDeg指定）
+
+function drawSimpleMark(ft, r, col, lwd, tiltDeg){
+  ctx.save();
+  // キャップ：配管に対して直角に配置／プラグ：さらに90°追加
+  // アイソメ図では管が30°傾いているため150°/240°、平面図では管が水平のため90°/180°で直角になる
+  // フルカップリング：配管に対して水平（傾きなし）に配置
+  var isPlanMark = (tiltDeg === 0);
+  var extraRot = isPlanMark
+    ? ((ft === 'cap') ? 90 : (ft === 'plug') ? 180 : 0)
+    : ((ft === 'cap') ? 150 : (ft === 'plug') ? 240 : 0);
+  var effTilt = (ft === 'fullcoupling') ? 0 : (tiltDeg||0);
+  ctx.rotate((effTilt + extraRot) * Math.PI/180);
+  ctx.strokeStyle = col; ctx.fillStyle = '#ffffff'; ctx.lineWidth = lwd;
+  ctx.lineJoin = 'round';
+
+  if(ft === 'cap'){
+    // キャップ：管端をふさぐ「⊐」形の受け口
+    var w=r*0.55, h=r*0.5;
+    ctx.beginPath();
+    ctx.moveTo(0,-h); ctx.lineTo(w,-h); ctx.lineTo(w,h); ctx.lineTo(0,h);
+    ctx.stroke();
+  } else if(ft === 'fullcoupling'){
+    // フルカップリング：配管をまたぐ小さな箱（スリーブ）
+    var fw=r*0.42, fh=r*0.4;
+    ctx.beginPath();
+    ctx.rect(-fw,-fh,fw*2,fh*2);
+    ctx.fill(); ctx.stroke();
+  } else if(ft === 'plug'){
+    // プラグ：管端をふさぐ▽（下向き三角）
+    var pw=r*0.42, pyTop=-r*0.28, pyBot=r*0.55;
+    ctx.beginPath();
+    ctx.moveTo(-pw,pyTop); ctx.lineTo(pw,pyTop); ctx.lineTo(0,pyBot);
+    ctx.closePath(); ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ── HIT TEST ───────────────────────────────────
+function hitTest(sx,sy){
+  for(var i=S.els.length-1;i>=0;i--){
+    var e=S.els[i];
+    if(e.kind==='pipe'){
+      var p1=w2s(e.wx1,e.wy1),p2=w2s(e.wx2,e.wy2);
+      if(segD({x:sx,y:sy},p1,p2)<Math.max(8,lw()/2+6)) return {el:e,part:'body'};
+    } else if(e.kind==='fitting'){
+      var sp=w2s(e.wx,e.wy),r=20*S.zoom*(e.scale||1);
+      if(dist2(sx,sy,sp.x,sp.y)<r) return {el:e,part:'body'};
+    } else if(e.kind==='weld'){
+      var spw=w2s(e.wx,e.wy);
+      if(dist2(sx,sy,spw.x,spw.y)<16*(e.scale||1)) return {el:e,part:'body'};
+    } else if(e.kind==='northarrow'){
+      var spn=w2s(e.wx,e.wy), rn=26*S.zoom*(e.scale||1);
+      if(dist2(sx,sy,spn.x,spn.y)<rn) return {el:e,part:'body'};
+    } else if(e.kind==='marker'){
+      var spm=w2s(e.wx,e.wy), rm=22*S.zoom*(e.scale||1);
+      if(dist2(sx,sy,spm.x,spm.y)<rm) return {el:e,part:'body'};
+    } else if(e.kind==='leader'){
+      var lp1=w2s(e.wx1,e.wy1), lp2=w2s(e.wx2,e.wy2);
+      if(segD({x:sx,y:sy},lp1,lp2)<10) return {el:e,part:'body'};
+      ctx.font='bold '+(12*S.zoom)+'px sans-serif';
+      var lm=ctx.measureText(e.text);
+      var goingRight = e.wx2>=e.wx1;
+      var boxX = goingRight ? lp2.x+2 : lp2.x-2-lm.width;
+      if(sx>=boxX-2&&sx<=boxX+lm.width+2&&sy>=lp2.y-14*S.zoom&&sy<=lp2.y+2) return {el:e,part:'body'};
+    } else if(e.kind==='text'){
+      var tp=w2s(e.wx,e.wy);
+      ctx.font='bold '+(12*S.zoom*(e.scale||1))+'px sans-serif';
+      var m=ctx.measureText(e.text);
+      if(sx>=tp.x-2&&sx<=tp.x+m.width+4&&sy>=tp.y-14*S.zoom&&sy<=tp.y+2) return {el:e,part:'body'};
+    }
+  }
+  return null;
+}
+function hitEndpoint(sx,sy){
+  var th=Math.max(16,SNAP_DIST_PX);
+  for(var i=S.els.length-1;i>=0;i--){
+    var e=S.els[i]; if(e.kind!=='pipe') continue;
+    var p1=w2s(e.wx1,e.wy1),p2=w2s(e.wx2,e.wy2);
+    if(dist2(sx,sy,p1.x,p1.y)<th) return {el:e,end:0};
+    if(dist2(sx,sy,p2.x,p2.y)<th) return {el:e,end:1};
+  }
+  return null;
+}
+function dist2(ax,ay,bx,by){ return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by)); }
+function segD(p,a,b){
+  var dx=b.x-a.x,dy=b.y-a.y;
+  if(!dx&&!dy) return dist2(p.x,p.y,a.x,a.y);
+  var t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy)));
+  return dist2(p.x,p.y,a.x+t*dx,a.y+t*dy);
+}
+
+// 画面座標から最も近い配管(線分)上のワールド座標点を返す
+function nearestPointOnPipe(sx,sy){
+  var best=null, bestD=24;
+  S.els.forEach(function(e){
+    if(e.kind!=='pipe') return;
+    var p1=w2s(e.wx1,e.wy1), p2=w2s(e.wx2,e.wy2);
+    var dx=p2.x-p1.x, dy=p2.y-p1.y;
+    if(!dx&&!dy) return;
+    var t=Math.max(0,Math.min(1,((sx-p1.x)*dx+(sy-p1.y)*dy)/(dx*dx+dy*dy)));
+    var px=p1.x+t*dx, py=p1.y+t*dy;
+    var d=dist2(sx,sy,px,py);
+    if(d<bestD){
+      bestD=d;
+      var wPt = s2w(px,py);
+      var ang = Math.atan2(e.wy2-e.wy1, e.wx2-e.wx1) * 180/Math.PI;
+      best={x:wPt.x, y:wPt.y, angle:ang, el:e};
+    }
+  });
+  return best;
+}
+
+// 特定の配管要素(e)に対して、画面座標から最も近いワールド座標点を返す（分割機能用）
+function nearestPointOnPipeForEl(sx,sy,e){
+  var p1=w2s(e.wx1,e.wy1), p2=w2s(e.wx2,e.wy2);
+  var dx=p2.x-p1.x, dy=p2.y-p1.y;
+  if(!dx&&!dy) return null;
+  var t=Math.max(0,Math.min(1,((sx-p1.x)*dx+(sy-p1.y)*dy)/(dx*dx+dy*dy)));
+  var px=p1.x+t*dx, py=p1.y+t*dy;
+  return s2w(px,py);
+}
+
+// 角度差を-π～πの範囲に正規化して絶対値を返す（一直線判定用）
+function angDiffAbs(a,b){
+  var d=a-b;
+  while(d>Math.PI) d-=2*Math.PI;
+  while(d<-Math.PI) d+=2*Math.PI;
+  return Math.abs(d);
+}
+// 継手（または他の分割要因）を削除した後、その位置で分割されていた配管が
+// ちょうど2本・一直線上にある場合は1本の配管に結合する。
+// 他の継手・溶接がまだ同じ位置に残っている場合や、T字・交差点になっている場合は結合しない。
+function tryMergePipesAtPoint(px,py){
+  var EPS = 1e-4;
+  var stillOccupied = S.els.some(function(e){
+    return (e.kind==='fitting' || e.kind==='weld') && dist2(e.wx,e.wy,px,py) < EPS;
+  });
+  if(stillOccupied) return;
+
+  var candidates = [];
+  S.els.forEach(function(e){
+    if(e.kind!=='pipe') return;
+    if(dist2(e.wx1,e.wy1,px,py) < EPS) candidates.push({el:e, end:0});
+    else if(dist2(e.wx2,e.wy2,px,py) < EPS) candidates.push({el:e, end:1});
+  });
+  if(candidates.length !== 2) return; // ちょうど2本の時だけ結合対象とする
+
+  var a=candidates[0], b=candidates[1];
+  var aFar = (a.end===0) ? {x:a.el.wx2,y:a.el.wy2} : {x:a.el.wx1,y:a.el.wy1};
+  var bFar = (b.end===0) ? {x:b.el.wx2,y:b.el.wy2} : {x:b.el.wx1,y:b.el.wy1};
+
+  var angA = Math.atan2(py-aFar.y, px-aFar.x); // aFar→点 の向き
+  var angB = Math.atan2(bFar.y-py, bFar.x-px); // 点→bFar の向き
+  if(angDiffAbs(angA, angB) > 0.02) return; // 一直線でなければ結合しない（約1°まで許容）
+
+  a.el.wx1=aFar.x; a.el.wy1=aFar.y; a.el.wx2=bFar.x; a.el.wy2=bFar.y;
+  delete a.el.dimText; // 長さが変わるため寸法カスタム文字はリセット
+  S.els = S.els.filter(function(e){ return e !== b.el; });
+}
+
+// ── INPUT: MOUSE ───────────────────────────────
+canvas.addEventListener('pointerdown',function(e){
+  if(e.pointerType==='touch') return; e.preventDefault();
+  if(e.button===2){S.panning=true;S.panStart={x:e.offsetX-S.px,y:e.offsetY-S.py};return;}
+  startPress({x:e.offsetX,y:e.offsetY});
+});
+canvas.addEventListener('pointermove',function(e){
+  if(e.pointerType==='touch') return; e.preventDefault();
+  movePress({x:e.offsetX,y:e.offsetY});
+});
+canvas.addEventListener('pointerup',function(e){
+  if(e.pointerType==='touch') return; e.preventDefault();
+  endPress({x:e.offsetX,y:e.offsetY});
+});
+canvas.addEventListener('contextmenu',function(e){e.preventDefault();});
+canvas.addEventListener('wheel',function(e){
+  e.preventDefault(); zoomAt(e.deltaY>0?0.88:1.14,e.offsetX,e.offsetY);
+},{passive:false});
+
+// ── INPUT: TOUCH ───────────────────────────────
+canvas.addEventListener('touchstart',function(e){
+  e.preventDefault();
+  S.touches=Array.from(e.touches);
+  if(S.touches.length>=2){
+    S.pinchDist=tdist(S.touches[0],S.touches[1]);
+    S.pinching=true;
+    cancelLongPress();
+    S.drawing=false; S.prev=null; S.dragging=false;
+    return;
+  }
+  if(S.touches.length!==1) return;
+  startPress(tpos(e.touches[0]));
+},{passive:false});
+
+canvas.addEventListener('touchmove',function(e){
+  e.preventDefault();
+  var ts=Array.from(e.touches);
+  if(ts.length>=2){
+    S.pinching=true;
+    cancelLongPress();
+    var d=tdist(ts[0],ts[1]);
+    var sc=d/S.pinchDist;
+    var r=canvas.getBoundingClientRect();
+    var cx=(ts[0].clientX+ts[1].clientX)/2-r.left;
+    var cy=(ts[0].clientY+ts[1].clientY)/2-r.top;
+    zoomAt(sc,cx,cy); S.pinchDist=d;
+    if(S.touches.length>=2){
+      S.px+=(ts[0].clientX+ts[1].clientX)/2-(S.touches[0].clientX+S.touches[1].clientX)/2;
+      S.py+=(ts[0].clientY+ts[1].clientY)/2-(S.touches[0].clientY+S.touches[1].clientY)/2;
+    }
+    S.touches=ts; render(); return;
+  }
+  if(ts.length===1 && !S.pinching){
+    movePress(tpos(ts[0]));
+  }
+},{passive:false});
+
+canvas.addEventListener('touchend',function(e){
+  if(e.touches.length===0){
+    if(!S.pinching && e.changedTouches.length>0){
+      endPress(tpos(e.changedTouches[0]));
+    }
+    // ピンチ操作が関与していた場合は、タップ系処理を一切発火させず終了
+    S.pinching=false;
+    cancelLongPress();
+    S.longPressFired=true; // 指を完全に離すまでタップ確定を防ぐ
+  }
+  S.touches=[];
+});
+
+function tpos(t){var r=canvas.getBoundingClientRect();return{x:t.clientX-r.left,y:t.clientY-r.top};}
+function tdist(a,b){return Math.sqrt((a.clientX-b.clientX)*(a.clientX-b.clientX)+(a.clientY-b.clientY)*(a.clientY-b.clientY));}
+
+// ── 長押し検出コア ──────────────────────────────
+function cancelLongPress(){
+  if(S.longPressTimer){ clearTimeout(S.longPressTimer); S.longPressTimer=null; }
+}
+
+function startPress(pos){
+  S.downPos = pos;
+  S.longPressFired = false;
+
+  // 既にドラッグモード中（移動操作中）にタップしたら、その場での移動を継続する
+  if(S.dragMode==='move'){
+    S.dragging=true;
+    var el2=S.dragEl;
+    if(el2.kind==='pipe' || el2.kind==='leader'){
+      var ww0=s2w(pos.x,pos.y); S.dragOffX=ww0.x-el2.wx1; S.dragOffY=ww0.y-el2.wy1;
+    } else {
+      var ww1=s2w(pos.x,pos.y); S.dragOffX=ww1.x-el2.wx; S.dragOffY=ww1.y-el2.wy;
+    }
+    return;
+  }
+  // グループ移動モード中にタップしたら、その場から移動を継続する
+  if(S.dragMode==='groupmove'){
+    S.dragging=true;
+    S.dragGroupStartWorld = s2w(pos.x,pos.y);
+    S.dragGroupOrig = S.multiSel.map(function(el){
+      if(el.kind==='pipe' || el.kind==='leader'){ return {el:el, wx1:el.wx1, wy1:el.wy1, wx2:el.wx2, wy2:el.wy2}; }
+      return {el:el, wx:el.wx, wy:el.wy};
+    });
+    return;
+  }
+
+  // 文字ツール：タップで始点、ドラッグして終点まで引き出し線を引く
+  if(S.tool==='text'){
+    S.drawingLeader = true;
+    S.leaderStart = s2w(pos.x,pos.y);
+    S.leaderPrev = null;
+    return;
+  }
+
+  cancelLongPress();
+  S.longPressTimer = setTimeout(function(){
+    S.longPressFired = true;
+    activateLongPress(pos);
+  }, LONG_PRESS_MS);
+}
+
+function movePress(pos){
+  // 長押し判定前に大きく動いたら長押しをキャンセルして通常描画系の動きに切替
+  if(S.longPressTimer && S.downPos && dist2(pos.x,pos.y,S.downPos.x,S.downPos.y) > MOVE_CANCEL_PX){
+    cancelLongPress();
+    if(!S.dragMode){ handleDown(S.downPos); }
+  }
+  if(S.panning){S.px=pos.x-S.panStart.x;S.py=pos.y-S.panStart.y;render();return;}
+  if(S.dragMode==='groupmove'&&S.dragging&&S.dragGroupOrig){
+    var wg = s2w(pos.x,pos.y);
+    var dxg = wg.x - S.dragGroupStartWorld.x, dyg = wg.y - S.dragGroupStartWorld.y;
+    // 移動量自体をグリッドにスナップし、選択範囲全体がまとまって動くようにする
+    var sdx = Math.round(dxg/GRID_M)*GRID_M, sdy = Math.round(dyg/GRID_M)*GRID_M;
+    S.dragGroupOrig.forEach(function(o){
+      if(o.el.kind==='pipe' || o.el.kind==='leader'){
+        o.el.wx1=o.wx1+sdx; o.el.wy1=o.wy1+sdy; o.el.wx2=o.wx2+sdx; o.el.wy2=o.wy2+sdy;
+        if(o.el.kind==='pipe') delete o.el.dimText;
+      } else {
+        o.el.wx=o.wx+sdx; o.el.wy=o.wy+sdy;
+      }
+    });
+    render(); return;
+  }
+  if(S.dragMode==='move'&&S.dragEl&&S.dragging){
+    if(S.dragEl.kind==='pipe'){
+      // 固定モードではなく、指の「今の位置」が端に近いか中央寄りかを毎回判定する
+      var pEp1=w2s(S.dragEl.wx1,S.dragEl.wy1), pEp2=w2s(S.dragEl.wx2,S.dragEl.wy2);
+      var dEp0=dist2(pos.x,pos.y,pEp1.x,pEp1.y), dEp1=dist2(pos.x,pos.y,pEp2.x,pEp2.y);
+      var END_ZONE_PX=40;
+      if(dEp0<END_ZONE_PX || dEp1<END_ZONE_PX){
+        // 伸縮：近い方の端点だけを動かす（グリッドスナップ）
+        S.dragSubMode='stretch';
+        S.dragEnd=(dEp0<=dEp1)?0:1;
+        var wse=s2w(pos.x,pos.y), sge=snapGrid(wse.x,wse.y);
+        if(S.dragEnd===0){ S.dragEl.wx1=sge.x; S.dragEl.wy1=sge.y; }
+        else { S.dragEl.wx2=sge.x; S.dragEl.wy2=sge.y; }
+        delete S.dragEl.dimText; // 長さが変わるためカスタム寸法文字はリセット
+      } else {
+        // 移動：配管全体を平行移動
+        S.dragSubMode='move';
+        var ww=s2w(pos.x,pos.y),sg=snapGrid(ww.x-S.dragOffX,ww.y-S.dragOffY);
+        var dx=S.dragEl.wx2-S.dragEl.wx1,dy=S.dragEl.wy2-S.dragEl.wy1;
+        S.dragEl.wx1=sg.x;S.dragEl.wy1=sg.y;S.dragEl.wx2=sg.x+dx;S.dragEl.wy2=sg.y+dy;
+      }
+    } else if(S.dragEl.kind==='fitting'){
+      // 継手は配管線上にしか移動できない（角度は手動で保持、位置のみ線にスナップ）
+      var fp = nearestPointOnPipe(pos.x,pos.y);
+      if(fp){
+        S.dragEl.wx=fp.x; S.dragEl.wy=fp.y;
+      }
+    } else if(S.dragEl.kind==='weld'){
+      // 溶接記号も配管線上にしか移動できない。角度は配管に追従させる
+      var wfp = nearestPointOnPipe(pos.x,pos.y);
+      if(wfp){
+        S.dragEl.wx=wfp.x; S.dragEl.wy=wfp.y; S.dragEl.pipeAngle=wfp.angle;
+      }
+    } else if(S.dragEl.kind==='text' || S.dragEl.kind==='northarrow' || S.dragEl.kind==='marker'){
+      var ww2=s2w(pos.x,pos.y),sg2=snapGrid(ww2.x-S.dragOffX,ww2.y-S.dragOffY);
+      S.dragEl.wx=sg2.x; S.dragEl.wy=sg2.y;
+    } else if(S.dragEl.kind==='leader'){
+      var ww3=s2w(pos.x,pos.y);
+      var nx1 = ww3.x-S.dragOffX, ny1 = ww3.y-S.dragOffY;
+      var ldx = S.dragEl.wx2-S.dragEl.wx1, ldy = S.dragEl.wy2-S.dragEl.wy1;
+      S.dragEl.wx1=nx1; S.dragEl.wy1=ny1; S.dragEl.wx2=nx1+ldx; S.dragEl.wy2=ny1+ldy;
+    }
+    render(); return;
+  }
+  if(S.drawing){
+    var snap2=findSnap(pos.x,pos.y,null,-1); S.snapPt=snap2;
+    var ss=w2s(S.drawStart.x,S.drawStart.y);
+    var we2=snap2||snapIso(ss.x,ss.y,pos.x,pos.y);
+    S.prev={kind:'pipe',pt:S.pt,wx1:S.drawStart.x,wy1:S.drawStart.y,wx2:we2.x,wy2:we2.y};
+    render();
+  }
+  if(S.drawingLeader){
+    var we3 = s2w(pos.x,pos.y);
+    S.leaderPrev = {wx1:S.leaderStart.x, wy1:S.leaderStart.y, wx2:we3.x, wy2:we3.y};
+    render();
+  }
+  if(S.rangeSelecting){
+    S.rangeEnd = {x:pos.x, y:pos.y};
+    render();
+  }
+}
+
+function endPress(pos){
+  cancelLongPress();
+  if(S.panning){S.panning=false;return;}
+  if(S.dragMode==='groupmove'){
+    if(S.justGrabbed){
+      S.justGrabbed = false;
+      S.dragging=false;
+      return;
+    }
+    var wasDraggingFarG = S.downPos && dist2(pos.x,pos.y,S.downPos.x,S.downPos.y) > MOVE_CANCEL_PX;
+    S.dragging=false;
+    if(!wasDraggingFarG){
+      endGroupMove();
+    }
+    return;
+  }
+  if(S.dragMode==='move'){
+    if(S.justGrabbed){
+      // 長押しでつかんだ直後の指離しは終了とみなさない
+      S.justGrabbed = false;
+      S.dragging=false;
+      return;
+    }
+    var wasDraggingFar = S.downPos && dist2(pos.x,pos.y,S.downPos.x,S.downPos.y) > MOVE_CANCEL_PX;
+    S.dragging=false;
+    if(!wasDraggingFar){
+      // ドラッグせずタップだけだった場合は確定して移動モードを終了
+      endDragMode();
+    }
+    return;
+  }
+  if(S.dragMode==='rotateFit'){
+    return; // 回転モードは回転パネルの確定ボタンで終了
+  }
+  if(S.drawing){
+    S.drawing=false; S.prev=null;
+    if(S.tool==='pipe'&&S.drawStart){
+      var snap=findSnap(pos.x,pos.y,null,-1);
+      var ss=w2s(S.drawStart.x,S.drawStart.y);
+      var we=snap||snapIso(ss.x,ss.y,pos.x,pos.y);
+      var dx=we.x-S.drawStart.x,dy=we.y-S.drawStart.y;
+      if(Math.sqrt(dx*dx+dy*dy)>=GRID_M*0.5){
+        saveH();
+        S.els.push({kind:'pipe',pt:S.pt,wx1:S.drawStart.x,wy1:S.drawStart.y,wx2:we.x,wy2:we.y});
+      }
+    }
+    S.snapPt=null; render(); return;
+  }
+  if(S.drawingLeader){
+    S.drawingLeader = false;
+    var lEnd = s2w(pos.x,pos.y);
+    var ls = S.leaderStart;
+    S.leaderPrev = null;
+    var ldx=lEnd.x-ls.x, ldy=lEnd.y-ls.y;
+    var llen=Math.sqrt(ldx*ldx+ldy*ldy);
+    if(llen < GRID_M*0.5){
+      // ほぼ動かさなかった場合は線なしでその場に文字だけ配置
+      render();
+      openTextInput('文字を入力', '', function(t){
+        if(t && t.trim()){
+          saveH();
+          S.els.push({kind:'text', wx:ls.x, wy:ls.y, text:t});
+          render();
+        }
+      });
+      return;
+    }
+    render();
+    openTextInput('引き出し線の注釈を入力', '', function(t){
+      if(t && t.trim()){
+        saveH();
+        S.els.push({kind:'leader', wx1:ls.x, wy1:ls.y, wx2:lEnd.x, wy2:lEnd.y, text:t});
+        render();
+      }
+    });
+    return;
+  }
+  if(S.rangeSelecting){
+    S.rangeSelecting=false;
+    finalizeRangeSelect(pos);
+    return;
+  }
+  // 長押しが発火していなければ通常タップとして処理
+  if(!S.longPressFired){
+    handleDown(pos);
+  }
+}
+
+// ── 長押し発火時の処理 ─────────────────────────
+function activateLongPress(pos){
+  if(S.dragMode==='groupmove'){ endGroupMove(); return; }
+  if(S.dragMode){ endDragMode(); return; }
+  // 範囲選択中に、選択済みの範囲内を長押ししたらグループ移動モードを開始する
+  if(S.tool==='rangesel' && S.multiSel && S.multiSel.length>0){
+    var bbox = multiSelScreenBBox();
+    if(bbox && pos.x>=bbox.x0 && pos.x<=bbox.x1 && pos.y>=bbox.y0 && pos.y<=bbox.y1){
+      startGroupMove(pos);
+      return;
+    }
+  }
+  var h=hitTest(pos.x,pos.y);
+  if(!h){ return; }
+
+  if(h.el.kind==='pipe' || h.el.kind==='fitting' || h.el.kind==='text' || h.el.kind==='weld' || h.el.kind==='leader' || h.el.kind==='northarrow' || h.el.kind==='marker'){
+    S.justGrabbed = true;
+    saveH();
+    S.dragMode='move'; S.dragEl=h.el; S.dragging=true; S.dragEntryTime=Date.now();
+    S.sel=h.el;
+    S.lastFit = (h.el.kind==='fitting') ? h.el : null;
+    S.dragSubMode = null; S.dragEnd = null;
+    if(h.el.kind==='pipe'){
+      // 長押し時点では固定せず、動かしている最中の指の位置で毎回「移動」か「伸縮」かを判定する
+      S.dragSubMode = null;
+      var ww=s2w(pos.x,pos.y); S.dragOffX=ww.x-h.el.wx1; S.dragOffY=ww.y-h.el.wy1;
+    } else if(h.el.kind==='leader'){
+      var ww=s2w(pos.x,pos.y); S.dragOffX=ww.x-h.el.wx1; S.dragOffY=ww.y-h.el.wy1;
+    } else {
+      var ww2=s2w(pos.x,pos.y); S.dragOffX=ww2.x-h.el.wx; S.dragOffY=ww2.y-h.el.wy;
+    }
+    if(h.el.kind==='fitting'){
+      showToast('↔ ドラッグで移動 / 下の回転ボタンで回転 — タップで確定');
+    } else if(h.el.kind==='northarrow'){
+      showToast('↔ ドラッグで移動 / 下の回転ボタンで回転 — タップで確定');
+    } else if(h.el.kind==='marker'){
+      showToast('↔ ドラッグで移動 / 下の回転ボタンで向き調整 — タップで確定');
+    } else if(h.el.kind==='weld'){
+      showToast('↔ 配管線上をドラッグで移動 — タップで確定');
+    } else if(h.el.kind==='pipe'){
+      showToast('↔ 中央付近をドラッグで移動 / 端付近をドラッグで伸縮 — タップで確定');
+    } else {
+      showToast('↔ ドラッグで移動 — タップで確定');
+    }
+    render();
+  }
+}
+
+function endDragMode(){
+  hideRotPanel();
+  S.dragMode=null; S.dragEl=null; S.dragging=false; S.snapPt=null; S.justGrabbed=false; S.dragSubMode=null; S.dragEnd=null;
+  showToast('✅ 確定'); updateMirrorButton(); render();
+}
+
+// 範囲選択中の要素すべてを画面座標のバウンディングボックス（余白付き）で返す
+function multiSelScreenBBox(){
+  if(!S.multiSel || !S.multiSel.length) return null;
+  var xs=[], ys=[];
+  S.multiSel.forEach(function(el){
+    if(el.kind==='pipe' || el.kind==='leader'){
+      var p1=w2s(el.wx1,el.wy1), p2=w2s(el.wx2,el.wy2);
+      xs.push(p1.x,p2.x); ys.push(p1.y,p2.y);
+    } else {
+      var p=w2s(el.wx,el.wy);
+      xs.push(p.x); ys.push(p.y);
+    }
+  });
+  var pad=24;
+  return { x0:Math.min.apply(null,xs)-pad, x1:Math.max.apply(null,xs)+pad, y0:Math.min.apply(null,ys)-pad, y1:Math.max.apply(null,ys)+pad };
+}
+// 範囲選択した要素をまとめてドラッグ移動するモードを開始する
+function startGroupMove(pos){
+  saveH();
+  S.dragMode = 'groupmove';
+  S.dragging = true;
+  S.justGrabbed = true;
+  S.dragEntryTime = Date.now();
+  S.dragGroupStartWorld = s2w(pos.x,pos.y);
+  S.dragGroupOrig = S.multiSel.map(function(el){
+    if(el.kind==='pipe' || el.kind==='leader'){ return {el:el, wx1:el.wx1, wy1:el.wy1, wx2:el.wx2, wy2:el.wy2}; }
+    return {el:el, wx:el.wx, wy:el.wy};
+  });
+  showToast('↔ ドラッグで選択範囲ごと移動 — タップで確定');
+  render();
+}
+function endGroupMove(){
+  S.dragMode=null; S.dragGroupOrig=null; S.dragGroupStartWorld=null; S.dragging=false; S.justGrabbed=false;
+  showToast('✅ 確定'); render();
+}
+
+// 下部メニューの「消去」ボタン：
+// 移動モードでつかんでいる対象があれば、その場で削除する。
+// 何もつかんでいなければ通常の消去ツールに切り替える。
+function eraseAction(){
+  if(S.dragMode==='move' && S.dragEl){
+    saveH();
+    var target = S.dragEl;
+    var mergePt = (target.kind==='fitting') ? {x:target.wx, y:target.wy} : null;
+    S.els = S.els.filter(function(e){ return e !== target; });
+    hideRotPanel();
+    if(S.sel===target) S.sel=null;
+    if(S.lastFit===target) S.lastFit=null;
+    S.dragMode=null; S.dragEl=null; S.dragging=false; S.snapPt=null; S.justGrabbed=false; S.dragSubMode=null; S.dragEnd=null;
+    if(mergePt) tryMergePipesAtPoint(mergePt.x, mergePt.y);
+    showToast('🗑 削除しました');
+    updateMirrorButton();
+    render();
+    return;
+  }
+  setTool('eraser');
+}
+
+// ── CORE HANDLERS ──────────────────────────────
+function handleDown(pos){
+  // 「尺度変更」ボタンを先に押した後の、対象タップ待ちモード（他のツール処理より優先する）
+  if(S.pendingScale){
+    S.pendingScale = false;
+    var hSc = hitTest(pos.x,pos.y);
+    if(hSc && (hSc.el.kind==='pipe' || hSc.el.kind==='fitting' || hSc.el.kind==='text' || hSc.el.kind==='northarrow' || hSc.el.kind==='marker')){
+      applyScaleToTargets([hSc.el]);
+    } else {
+      showToast('尺度変更をキャンセルしました（対象の上をタップしてください）');
+    }
+    updateSt();
+    return;
+  }
+  hidePop();
+  S.lastFit=null;
+  if(S.tool==='eraser'){
+    var h2=hitTest(pos.x,pos.y);
+    if(h2){
+      saveH();
+      var mergePt2 = (h2.el.kind==='fitting') ? {x:h2.el.wx, y:h2.el.wy} : null;
+      S.els=S.els.filter(function(e){return e!==h2.el;});
+      S.multiSel=S.multiSel.filter(function(e){return e!==h2.el;});
+      if(mergePt2) tryMergePipesAtPoint(mergePt2.x, mergePt2.y);
+      render();
+    }
+    return;
+  }
+  if(S.tool==='rangesel'){
+    S.rangeSelecting=true;
+    S.rangeStart={x:pos.x,y:pos.y};
+    S.rangeEnd={x:pos.x,y:pos.y};
+    render();
+    return;
+  }
+  if(S.tool==='fitting'){
+    var fp = nearestPointOnPipe(pos.x,pos.y);
+    if(!fp){
+      showToast('配管の上をタップしてください');
+      return;
+    }
+    saveH();
+    var isPlanFit = !!S.ftPlan;
+    var placeAngle = 0;
+    if(S.ft === 'fl_relief'){
+      // 安全弁：配管の角度には追従させず、常に固定の向きで設置する（傾き補正済み：-15°→-7°→-2°、合計13°時計回り）
+      placeAngle = -2;
+    } else if(!isPlanFit){
+      // アイソメ用：配管の角度に自動で向きを合わせる（角度は30°刻みにスナップ）
+      // 平面図用は記号に角度を付けないため、この自動合わせは行わない
+      var snapAng = Math.round(fp.angle/30)*30;
+      if(snapAng < 0) snapAng += 360;
+      placeAngle = snapAng % 360;
+    }
+    // 配管の途中にバルブ等を置いた場合、その位置で配管を2本に分割する
+    // （端点に近い場合は分割せず、そのまま繋ぎ目として扱う）
+    if(fp.el){
+      var pe = fp.el;
+      var dxA=fp.x-pe.wx1, dyA=fp.y-pe.wy1;
+      var dxB=pe.wx2-fp.x, dyB=pe.wy2-fp.y;
+      var lenA=Math.sqrt(dxA*dxA+dyA*dyA), lenB=Math.sqrt(dxB*dxB+dyB*dyB);
+      if(lenA >= GRID_M*0.3 && lenB >= GRID_M*0.3){
+        var partB = {kind:'pipe', pt:pe.pt, status:pe.status, wx1:fp.x, wy1:fp.y, wx2:pe.wx2, wy2:pe.wy2};
+        pe.wx2 = fp.x; pe.wy2 = fp.y;
+        delete pe.dimText; // 寸法カスタム文字は分割後に不整合になるためリセット
+        S.els.push(partB);
+      }
+    }
+    var newFit={kind:'fitting',ft:S.ft,pt:S.pt,wx:fp.x,wy:fp.y,angle:placeAngle,mirror:false,plan:isPlanFit};
+    S.els.push(newFit);
+    S.sel=newFit;
+    S.lastFit=newFit;
+    updateMirrorButton();
+    showToast('継手を設置しました（長押しで移動・回転できます）');
+    render(); return;
+  }
+  if(S.tool==='weld'){
+    var wp = nearestPointOnPipe(pos.x,pos.y);
+    if(wp){
+      saveH();
+      S.els.push({kind:'weld', wt:S.weldType, wx:wp.x, wy:wp.y, pipeAngle:wp.angle});
+      render();
+    } else {
+      showToast('配管の上をタップしてください');
+    }
+    return;
+  }
+  if(S.tool==='northarrow'){
+    var wn = snapGrid(s2w(pos.x,pos.y).x, s2w(pos.x,pos.y).y);
+    saveH();
+    var newNa = {kind:'northarrow', wx:wn.x, wy:wn.y, angle:0, scale:1};
+    S.els.push(newNa);
+    S.sel = newNa;
+    S.lastFit = newNa;
+    showToast('プラントノースを設置しました（🔄回転ボタンで向きを調整できます）');
+    render();
+    return;
+  }
+  if(S.tool==='marker'){
+    var wm = snapGrid(s2w(pos.x,pos.y).x, s2w(pos.x,pos.y).y);
+    if(S.markerType==='balloon'){
+      openTextInput('番号を指定（同じ数字を複数回置くこともできます）', String(S.balloonNum), function(v){
+        var numVal = String(v).trim();
+        if(!numVal) return; // 空欄ならキャンセル扱い（設置しない）
+        saveH();
+        var newBl = {kind:'marker', mtype:'balloon', wx:wm.x, wy:wm.y, angle:0, scale:1, num:numVal};
+        S.els.push(newBl);
+        S.sel = newBl;
+        S.lastFit = newBl;
+        var parsedNext = parseInt(numVal,10);
+        S.balloonNum = isNaN(parsedNext) ? (S.balloonNum+1) : (parsedNext+1);
+        showToast('番号バルーンを設置しました');
+        render();
+      }, true, '1');
+      return;
+    }
+    saveH();
+    var newMk = {kind:'marker', mtype:S.markerType, wx:wm.x, wy:wm.y, angle:0, scale:1};
+    S.els.push(newMk);
+    S.sel = newMk;
+    S.lastFit = newMk;
+    showToast((MARKER_LABELS[S.markerType]||'マーク')+'を設置しました（矢印は🔄回転ボタンで向きを調整できます）');
+    render();
+    return;
+  }
+  if(S.tool==='stampExisting' || S.tool==='stampNew'){
+    var hs = hitTest(pos.x,pos.y);
+    if(hs && hs.el.kind==='pipe'){
+      saveH();
+      hs.el.status = (S.tool==='stampExisting') ? 'existing' : 'new';
+      showToast(S.tool==='stampExisting' ? '既設にしました（点線）' : '新設にしました（実線）');
+      render();
+    } else {
+      showToast('配管をタップしてください');
+    }
+    return;
+  }
+  if(S.tool==='split'){
+    var hsp = hitTest(pos.x,pos.y);
+    if(hsp && hsp.el.kind==='pipe'){
+      var pe = hsp.el;
+      var splitPt = nearestPointOnPipeForEl(pos.x,pos.y,pe);
+      if(splitPt){
+        var dxA=splitPt.x-pe.wx1, dyA=splitPt.y-pe.wy1;
+        var dxB=pe.wx2-splitPt.x, dyB=pe.wy2-splitPt.y;
+        var lenA=Math.sqrt(dxA*dxA+dyA*dyA), lenB=Math.sqrt(dxB*dxB+dyB*dyB);
+        if(lenA < GRID_M*0.3 || lenB < GRID_M*0.3){
+          showToast('端点に近すぎます。中ほどをタップしてください');
+          return;
+        }
+        saveH();
+        var partB = {kind:'pipe', pt:pe.pt, status:pe.status, wx1:splitPt.x, wy1:splitPt.y, wx2:pe.wx2, wy2:pe.wy2};
+        pe.wx2 = splitPt.x; pe.wy2 = splitPt.y;
+        delete pe.dimText; // 寸法カスタム文字は分割後に不整合になるためリセット
+        S.els.push(partB);
+        showSplitMarker(splitPt.x, splitPt.y);
+        showToast('配管を2本に分割しました');
+        render();
+      }
+    } else {
+      showToast('配管をタップしてください');
+    }
+    return;
+  }
+  if(S.tool==='dim'){
+    var hd = hitTest(pos.x,pos.y);
+    if(hd && hd.el.kind==='pipe'){
+      var pipeEl = hd.el;
+      var len = Math.sqrt(Math.pow(pipeEl.wx2-pipeEl.wx1,2)+Math.pow(pipeEl.wy2-pipeEl.wy1,2));
+      var defaultVal = (pipeEl.dimText !== undefined) ? pipeEl.dimText : (Math.round(len*100)/100).toFixed(1);
+      openTextInput('寸法を編集（空欄で寸法非表示・線の長さは変わりません）', defaultVal, function(t){
+        saveH();
+        pipeEl.dimText = String(t).trim(); // 空欄ならそのまま空文字として保存し、表示も空白にする
+        render();
+      }, true);
+    } else {
+      showToast('配管をタップしてください');
+    }
+    return;
+  }
+  if(S.tool==='pipe'){
+    var snap=findSnap(pos.x,pos.y,null,-1);
+    S.snapPt=snap;
+    var st=snap||snapGrid(s2w(pos.x,pos.y).x,s2w(pos.x,pos.y).y);
+    S.drawing=true; S.drawStart=st; render();
+  }
+}
+
+// ── PAN / ZOOM ─────────────────────────────────
+function doZoom(f){zoomAt(f,canvas.width/2,canvas.height/2);}
+function zoomAt(f,cx,cy){
+  var nz=Math.max(0.12,Math.min(8,S.zoom*f)),fc=nz/S.zoom;
+  S.px=cx-fc*(cx-S.px);S.py=cy-fc*(cy-S.py);S.zoom=nz;render();
+}
+function resetView(){S.zoom=1;S.px=canvas.width/2;S.py=canvas.height/2;render();}
+function toggleGrid(){S.showGrid=!S.showGrid;render();}
+function currentMirrorTarget(){
+  if(S.dragEl && S.dragEl.kind==='fitting') return S.dragEl;
+  if(S.sel && S.sel.kind==='fitting') return S.sel;
+  if(S.lastFit && S.els.indexOf(S.lastFit)>=0) return S.lastFit;
+  return null;
+}
+function updateMirrorButton(){
+  var target=currentMirrorTarget();
+  document.getElementById('bMir').classList.toggle('on', !!(target && target.mirror));
+}
+function toggleMirror(){
+  if(S.multiSel && S.multiSel.length>0){
+    multiSelMirrorGroup();
+    return;
+  }
+  var target=currentMirrorTarget();
+  if(!target){
+    showToast('鏡像にする継手を長押しで選択、または継手を設置してから押してください');
+    updateMirrorButton();
+    return;
+  }
+  saveH();
+  target.mirror=!target.mirror;
+  S.sel=target;
+  showToast(target.mirror?'この継手を鏡像反転：ON':'この継手を鏡像反転：OFF');
+  updateMirrorButton();
+  render();
+}
+// ── 範囲選択（複数要素の選択・一括操作） ─────────────
+// 画面座標のバウンディングボックスに含まれる要素を集める
+function finalizeRangeSelect(pos){
+  if(!S.rangeStart){ render(); return; }
+  var x0=Math.min(S.rangeStart.x,pos.x), x1=Math.max(S.rangeStart.x,pos.x);
+  var y0=Math.min(S.rangeStart.y,pos.y), y1=Math.max(S.rangeStart.y,pos.y);
+  S.rangeStart=null; S.rangeEnd=null;
+  if(x1-x0<4 && y1-y0<4){
+    S.multiSel=[];
+    showToast('選択を解除しました');
+    render();
+    return;
+  }
+  var picked=[];
+  S.els.forEach(function(e){
+    if(e.kind==='pipe' || e.kind==='leader'){
+      var p1=w2s(e.wx1,e.wy1), p2=w2s(e.wx2,e.wy2);
+      if(p1.x>=x0&&p1.x<=x1&&p1.y>=y0&&p1.y<=y1&&p2.x>=x0&&p2.x<=x1&&p2.y>=y0&&p2.y<=y1) picked.push(e);
+    } else if(e.kind==='fitting' || e.kind==='weld' || e.kind==='text' || e.kind==='northarrow' || e.kind==='marker'){
+      var sp=w2s(e.wx,e.wy);
+      if(sp.x>=x0&&sp.x<=x1&&sp.y>=y0&&sp.y<=y1) picked.push(e);
+    }
+  });
+  S.multiSel = picked;
+  showToast(picked.length ? (picked.length+'個を選択しました（範囲内を長押しでまとめて移動できます）') : '範囲内に要素がありません');
+  render();
+}
+function clearMultiSel(){
+  S.multiSel=[];
+  render();
+}
+// 範囲選択した要素をまとめて削除する。削除した継手の位置で配管が一直線に
+// 分割されていた場合は自動で結合する（単体削除の消去ツールと同じ挙動）。
+function deleteMultiSel(){
+  if(!S.multiSel || !S.multiSel.length) return;
+  saveH();
+  var toDelete = S.multiSel.slice();
+  var fittingPoints = toDelete.filter(function(e){ return e.kind==='fitting'; }).map(function(e){ return {x:e.wx, y:e.wy}; });
+  S.els = S.els.filter(function(e){ return toDelete.indexOf(e) === -1; });
+  S.multiSel = [];
+  fittingPoints.forEach(function(p){ tryMergePipesAtPoint(p.x, p.y); });
+  showToast(toDelete.length+'個を削除しました');
+  render();
+}
+function updateMultiSelPanel(){
+  var panel=document.getElementById('multiSelPanel');
+  if(!panel) return;
+  var n = S.multiSel ? S.multiSel.length : 0;
+  panel.classList.toggle('vis', n>0);
+  if(n>0){
+    document.getElementById('multiSelTitle').textContent = n+'個選択中';
+    buildColorSwatches();
+  }
+}
+// 配管を長押しして移動・伸縮モードに入っている間、色と太さを変更できるパネル
+var PIPE_THICKNESS = [{label:'細',val:1.2},{label:'中',val:2},{label:'太',val:3.5}];
+function updatePipeEditPanel(){
+  var panel=document.getElementById('pipeEditPanel');
+  if(!panel) return;
+  var show = !!(S.dragMode==='move' && S.dragEl && S.dragEl.kind==='pipe');
+  panel.classList.toggle('vis', show);
+  if(show) buildPipeEditPanel();
+}
+function buildPipeEditPanel(){
+  var colorHost=document.getElementById('pipeColorSwatches');
+  if(colorHost && !colorHost.childNodes.length){
+    var html='';
+    MULTISEL_COLORS.forEach(function(c){
+      html += '<button class="rot-btn" style="background:'+c+';min-height:28px;" onclick="applyPipeColor(\''+c+'\')"></button>';
+    });
+    html += '<button class="rot-btn" onclick="applyPipeColor(null)">既定色</button>';
+    colorHost.innerHTML = html;
+  }
+  var thickHost=document.getElementById('pipeThicknessBtns');
+  if(thickHost && !thickHost.childNodes.length){
+    thickHost.innerHTML = PIPE_THICKNESS.map(function(t){
+      return '<button class="rot-btn" onclick="applyPipeThickness('+t.val+')">'+t.label+'</button>';
+    }).join('');
+  }
+}
+function applyPipeColor(hex){
+  if(!S.dragEl || S.dragEl.kind!=='pipe') return;
+  saveH();
+  if(hex){ S.dragEl.color = hex; } else { delete S.dragEl.color; }
+  render();
+}
+function applyPipeThickness(val){
+  if(!S.dragEl || S.dragEl.kind!=='pipe') return;
+  saveH();
+  S.dragEl.sz = val;
+  render();
+}
+var MULTISEL_COLORS = ['#0277bd','#d32f2f','#2e7d32','#f57f17','#6a1b9a','#000000'];
+function buildColorSwatches(){
+  var host=document.getElementById('colorSwatches');
+  if(!host || host.childNodes.length) return; // 一度だけ生成
+  var html='';
+  MULTISEL_COLORS.forEach(function(c){
+    html += '<button class="rot-btn" style="background:'+c+';min-height:28px;" onclick="applyMultiSelColor(\''+c+'\')"></button>';
+  });
+  html += '<button class="rot-btn" onclick="applyMultiSelColor(null)">既定色</button>';
+  host.innerHTML = html;
+  var thickHost=document.getElementById('multiSelThicknessBtns');
+  if(thickHost && !thickHost.childNodes.length){
+    thickHost.innerHTML = PIPE_THICKNESS.map(function(t){
+      return '<button class="rot-btn" onclick="applyMultiSelThickness('+t.val+')">'+t.label+'</button>';
+    }).join('');
+  }
+}
+function applyMultiSelColor(hex){
+  if(!S.multiSel || !S.multiSel.length){ return; }
+  saveH();
+  S.multiSel.forEach(function(e){
+    if(hex){ e.color = hex; } else { delete e.color; }
+  });
+  showToast(hex ? '選択した'+S.multiSel.length+'個の色を変更しました' : '選択した'+S.multiSel.length+'個を既定色に戻しました');
+  render();
+}
+function applyMultiSelThickness(val){
+  if(!S.multiSel || !S.multiSel.length){ return; }
+  var pipes = S.multiSel.filter(function(e){ return e.kind==='pipe'; });
+  if(!pipes.length){ showToast('選択範囲に配管が含まれていません'); return; }
+  saveH();
+  pipes.forEach(function(e){ e.sz = val; });
+  showToast('選択した配管'+pipes.length+'本の太さを変更しました');
+  render();
+}
+// 複数要素のワールド座標バウンディングボックス中心を求める
+function bboxCenterOf(list){
+  var xs=[], ys=[];
+  list.forEach(function(el){
+    if(el.kind==='pipe' || el.kind==='leader'){ xs.push(el.wx1,el.wx2); ys.push(el.wy1,el.wy2); }
+    else { xs.push(el.wx); ys.push(el.wy); }
+  });
+  if(!xs.length) return {x:0,y:0};
+  var minx=Math.min.apply(null,xs), maxx=Math.max.apply(null,xs);
+  var miny=Math.min.apply(null,ys), maxy=Math.max.apply(null,ys);
+  return {x:(minx+maxx)/2, y:(miny+maxy)/2};
+}
+function rotatePtAround(px,py,cx,cy,rad){
+  var cosA=Math.cos(rad), sinA=Math.sin(rad);
+  var dx=px-cx, dy=py-cy;
+  return { x: cx + dx*cosA - dy*sinA, y: cy + dx*sinA + dy*cosA };
+}
+function multiSelRotateGroup(){
+  if(!S.multiSel || !S.multiSel.length) return;
+  saveH();
+  var pivot = bboxCenterOf(S.multiSel);
+  var rad = 30*Math.PI/180;
+  S.multiSel.forEach(function(el){
+    if(el.kind==='pipe' || el.kind==='leader'){
+      var p1=rotatePtAround(el.wx1,el.wy1,pivot.x,pivot.y,rad);
+      var p2=rotatePtAround(el.wx2,el.wy2,pivot.x,pivot.y,rad);
+      el.wx1=p1.x; el.wy1=p1.y; el.wx2=p2.x; el.wy2=p2.y;
+      if(el.kind==='pipe') delete el.dimText;
+    } else {
+      var p=rotatePtAround(el.wx,el.wy,pivot.x,pivot.y,rad);
+      el.wx=p.x; el.wy=p.y;
+      if(el.kind==='fitting'){ el.angle=((el.angle||0)+30)%360; }
+      if(el.kind==='weld'){ el.pipeAngle=((el.pipeAngle||0)+30)%360; }
+      if(el.kind==='northarrow'){ el.angle=((el.angle||0)+30)%360; }
+      if(el.kind==='marker'){ el.angle=((el.angle||0)+30)%360; }
+    }
+  });
+  showToast(S.multiSel.length+'個を回転しました');
+  render();
+}
+// 範囲選択した要素を、選択範囲の中心を通る縦軸で実際に反転させる（回転と同じく空間的な操作）。
+// 位置を左右反転させるだけでなく、継手・プラントノースは角度を反転し鏡像フラグも反転させる
+// （数学的に、鏡像変換は「角度の符号反転」と「鏡像フラグの反転」の組み合わせで正しく表現される）。
+// 溶接は形状が左右対称なため角度反転のみ、文字は反転させず位置だけ動かす（読みやすさを保つため）。
+function multiSelMirrorGroup(){
+  if(!S.multiSel || !S.multiSel.length) return;
+  saveH();
+  var pivot = bboxCenterOf(S.multiSel);
+  S.multiSel.forEach(function(el){
+    if(el.kind==='pipe' || el.kind==='leader'){
+      el.wx1 = 2*pivot.x - el.wx1;
+      el.wx2 = 2*pivot.x - el.wx2;
+      if(el.kind==='pipe') delete el.dimText;
+    } else {
+      el.wx = 2*pivot.x - el.wx;
+      if(el.kind==='fitting'){
+        el.angle = ((-(el.angle||0))%360+360)%360;
+        el.mirror = !el.mirror;
+      } else if(el.kind==='weld'){
+        el.pipeAngle = ((-(el.pipeAngle||0))%360+360)%360;
+      } else if(el.kind==='northarrow'){
+        el.angle = ((-(el.angle||0))%360+360)%360;
+        el.mirror = !el.mirror;
+      } else if(el.kind==='marker'){
+        el.angle = ((-(el.angle||0))%360+360)%360;
+      }
+      // text はwxのみ反転（文字自体を鏡像にすると読めなくなるため向きは変えない）
+    }
+  });
+  showToast(S.multiSel.length+'個をまとめて鏡像反転しました');
+  render();
+}
+// 下メニューの「尺度変更」：範囲選択があればその一括、なければ現在の対象1個に適用
+// 尺度変更の対象：回転対象（継手・配管・プラントノース）に加えて、選択中／掴んでいる文字も含める
+function currentScaleTarget(){
+  var t = currentRotateTarget();
+  if(t) return t;
+  if(S.dragEl && S.dragEl.kind==='text') return S.dragEl;
+  if(S.sel && S.sel.kind==='text') return S.sel;
+  return null;
+}
+// 実際に尺度(%)を尋ねて対象へ適用する処理（長押し選択／範囲選択／ボタン先押し＋タップ選択の
+// どの経路から来ても、この関数を共通で呼び出す）
+function applyScaleToTargets(targets){
+  var targetsRef = targets;
+  openTextInput('尺度を指定（%、例：100は変更なし）', '100', function(v){
+    var pct = parseFloat(v);
+    if(!pct || pct<=0){ showToast('正しい数値を入力してください'); return; }
+    var factor = pct/100;
+    saveH();
+    var pivot = bboxCenterOf(targetsRef);
+    targetsRef.forEach(function(el){
+      if(el.kind==='pipe' || el.kind==='leader'){
+        el.wx1 = pivot.x + (el.wx1-pivot.x)*factor;
+        el.wy1 = pivot.y + (el.wy1-pivot.y)*factor;
+        el.wx2 = pivot.x + (el.wx2-pivot.x)*factor;
+        el.wy2 = pivot.y + (el.wy2-pivot.y)*factor;
+        if(el.kind==='pipe') delete el.dimText;
+      } else {
+        el.wx = pivot.x + (el.wx-pivot.x)*factor;
+        el.wy = pivot.y + (el.wy-pivot.y)*factor;
+        if(el.kind==='fitting' || el.kind==='weld' || el.kind==='text' || el.kind==='northarrow' || el.kind==='marker'){
+          // 単体を選んだ場合は位置が動かないため、記号自体の大きさを変えることで
+          // 尺度変更が見た目に反映されるようにする
+          el.scale = (el.scale||1) * factor;
+        }
+      }
+    });
+    showToast(targetsRef.length+'個の尺度を'+pct+'%に変更しました');
+    render();
+  }, true, '10');
+}
+// 下メニューの「尺度変更」：
+// ① 範囲選択中ならその一括、②既に長押しで掴んでいる／選択中の対象があればそれに適用。
+// ③ どちらも無い場合は「対象タップ待ち」モードに入り、次にタップした配管／継手／文字／
+//    プラントノースへそのまま適用する（長押し不要・ボタンを先に押す操作にも対応するため）。
+function scaleAction(){
+  var targets = (S.multiSel && S.multiSel.length>0) ? S.multiSel.slice() : null;
+  if(!targets){
+    var t = currentScaleTarget();
+    if(t) targets=[t];
+  }
+  if(!targets || !targets.length){
+    S.pendingScale = true;
+    showToast('尺度変更したい配管／継手／文字をタップしてください');
+    updateSt();
+    return;
+  }
+  applyScaleToTargets(targets);
+}
+// 分割位置に一時的な赤い●マーカーを表示（分割した場所がひと目で分かるように）
+function showSplitMarker(wx,wy){
+  if(S.splitMarkerTimer){ clearTimeout(S.splitMarkerTimer); S.splitMarkerTimer=null; }
+  S.splitMarker = {wx:wx, wy:wy};
+  S.splitMarkerTimer = setTimeout(function(){
+    S.splitMarker=null; S.splitMarkerTimer=null; render();
+  }, 900);
+}
+
+function toggleDimVisible(){
+  S.showDim=!S.showDim;
+  document.getElementById('bDimToggle').classList.toggle('on', S.showDim);
+  showToast(S.showDim ? '寸法表示：ON' : '寸法表示：OFF');
+  render();
+}
+
+// ── SETTERS ────────────────────────────────────
+function setTool(t){
+  if(S.dragMode==='groupmove') endGroupMove();
+  else if(S.dragMode) endDragMode();
+  S.tool=t;
+  S.pendingScale=false;
+  S.multiSel=[]; S.rangeSelecting=false; S.rangeStart=null; S.rangeEnd=null;
+  ['bPipe','bDim','bTxt','bErs','bSel'].forEach(function(id){document.getElementById(id).classList.remove('on');});
+  var m={pipe:'bPipe',dim:'bDim',text:'bTxt',eraser:'bErs',rangesel:'bSel'};
+  if(m[t]) document.getElementById(m[t]).classList.add('on');
+  var keepDrawerOpen = ['fitting','stampExisting','stampNew','split','marker'];
+  if(keepDrawerOpen.indexOf(t)===-1) closeDrawer();
+  updateSt(); updateMirrorButton(); updateMultiSelPanel(); updatePipeEditPanel();
+}
+function setToolFitting(){
+  setTool('fitting');
+  var d=document.getElementById('drawer');
+  d.classList.add('open');
+}
+
+// ── ESCボタン：進行中の操作をすべて中断し、ニュートラルな状態（配管ツール）に戻す ──
+function escapeToNeutral(){
+  closeTextInput();
+  closeShareSheet();
+  cancelLongPress();
+  S.drawing=false; S.drawStart=null; S.prev=null; S.snapPt=null;
+  S.drawingLeader=false; S.leaderStart=null; S.leaderPrev=null;
+  S.rangeSelecting=false; S.rangeStart=null; S.rangeEnd=null;
+  S.sel=null; S.lastFit=null; S.pendingScale=false;
+  setTool('pipe'); // 内部でドラッグ・グループ移動モードの終了と選択解除も行われる
+  showToast('⏹ 操作を中断しました');
+  render();
+}
+
+function setFT(t, isPlan){
+  S.ft=t; S.ftPlan=!!isPlan; setTool('fitting'); showToast('継手: '+fitLabel(t));
+}
+function setWeldTool(t){
+  S.weldType=t; setTool('weld');
+  showToast('溶接部: '+(t==='weld_butt'?'突合せ溶接（配管をタップ）':'隅肉溶接（配管をタップ）'));
+}
+var MARKER_LABELS = {circle:'丸', triangle:'三角', square:'四角', cloud:'雲', arrow:'矢印', balloon:'番号バルーン'};
+function setMarkerType(t){
+  S.markerType=t; setTool('marker');
+  showToast('注記マーク: '+(MARKER_LABELS[t]||t)+'（タップした位置に設置されます）');
+}
+
+// ── HISTORY ────────────────────────────────────
+function saveH(){S.hist.push(JSON.stringify(S.els));if(S.hist.length>80)S.hist.shift();}
+function undoAct(){
+  if(S.dragMode==='groupmove'){ endGroupMove(); return; }
+  if(S.dragMode){endDragMode();return;}
+  if(!S.hist.length){showToast('これ以上戻せません');return;}
+  S.els=JSON.parse(S.hist.pop());S.sel=null;hidePop();render();showToast('元に戻しました');
+}
+function clearAll(){
+  if(!S.els.length) return;
+  if(!confirm('全要素を削除しますか？')) return;
+  saveH();S.els=[];S.sel=null;hidePop();if(S.dragMode)endDragMode();render();
+}
+
+// ── PROPS ──────────────────────────────────────
+function hidePop(){ S.sel=null; }
+
+// ── DRAWER ─────────────────────────────────────
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+}
+
+// ── STATUS / TOAST ─────────────────────────────
+function updateSt(){
+  var tn={pipe:'配管',fitting:'継手',dim:'寸法',text:'文字',eraser:'消去',northarrow:'プラントノース',marker:'注記マーク'};
+  var mode='';
+  if(S.dragMode==='move'){
+    if(S.dragEl && S.dragEl.kind==='fitting'){
+      mode=' 【移動中・角度'+(S.dragEl.angle||0)+'°】';
+    } else if(S.dragEl && S.dragEl.kind==='pipe' && S.dragSubMode==='stretch'){
+      mode=' 【端点伸縮中】';
+    } else {
+      mode=' 【移動中】';
+    }
+  } else if(S.dragMode==='groupmove'){
+    mode=' 【グループ移動中】';
+  }
+  if(S.pendingScale) mode=' 【尺度変更：対象をタップ】';
+  document.getElementById('status').textContent=(tn[S.tool]||S.tool)+mode;
+}
+var toastTmr;
+function showToast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTmr);toastTmr=setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+// ── テキスト入力オーバーレイ ─────────────────────
+var textInputCallback = null;
+function openTextInput(title, initialValue, callback, numericOnly, stepVal){
+  document.getElementById('textInputTitle').textContent = title;
+  var f = document.getElementById('textInputField');
+  f.value = initialValue || '';
+  if(numericOnly){
+    f.setAttribute('inputmode','decimal');
+    f.setAttribute('type','number');
+    f.setAttribute('step', stepVal || '0.01');
+  } else {
+    f.setAttribute('inputmode','text');
+    f.setAttribute('type','text');
+    f.removeAttribute('step');
+  }
+  textInputCallback = callback;
+  document.getElementById('textInputOverlay').classList.add('vis');
+  // モバイルでキーボードを確実に開くため、少し遅延を入れてfocusを呼ぶ
+  var f2 = document.getElementById('textInputField');
+  f2.removeAttribute('readonly');
+  setTimeout(function(){
+    f2.focus();
+    if(f2.value) f2.select();
+  }, 120);
+}
+function closeTextInput(){
+  document.getElementById('textInputOverlay').classList.remove('vis');
+  textInputCallback = null;
+}
+function confirmTextInput(){
+  var v = document.getElementById('textInputField').value;
+  var cb = textInputCallback;
+  document.getElementById('textInputOverlay').classList.remove('vis');
+  textInputCallback = null;
+  if(cb) cb(v);
+}
+
+// ── EXPORT ─────────────────────────────────────
+// 共有シートの開閉
+function openShareSheet(){
+  document.getElementById('shareSheetOverlay').classList.add('vis');
+}
+function closeShareSheet(){
+  document.getElementById('shareSheetOverlay').classList.remove('vis');
+}
+
+// ── マイ記号：自由描画スタンプ作成エディタ ─────────────────
+var stEd = {
+  tool:'line', shapes:[], drawing:false, partFt:null,
+  sx:0, sy:0, cx:0, cy:0,
+  canvas:null, ctx:null, w:0, h:0
+};
+function setStampTool(t){
+  stEd.tool = t;
+  ['line','rect','circle','triangle','part'].forEach(function(k){
+    var b=document.getElementById('stTool-'+k);
+    if(b) b.classList.toggle('on', k===t);
+  });
+  if(t==='part') openPartPicker();
+}
+function stampSnapAngleEnd(sx,sy,ex,ey){
+  var dx=ex-sx, dy=ey-sy;
+  var len=Math.sqrt(dx*dx+dy*dy);
+  if(len<0.001) return {x:ex,y:ey};
+  var ang=Math.atan2(dy,dx);
+  var step=15*Math.PI/180;
+  var snapped=Math.round(ang/step)*step;
+  return { x: sx+Math.cos(snapped)*len, y: sy+Math.sin(snapped)*len };
+}
+function renderStampCanvas(preview){
+  var c=stEd.ctx, w=stEd.w, h=stEd.h;
+  c.clearRect(0,0,w,h);
+  c.fillStyle='#fafbfc'; c.fillRect(0,0,w,h);
+  // 15°刻みの補助線（中心から放射状に薄く表示）
+  c.save();
+  c.translate(w/2,h/2);
+  c.strokeStyle='rgba(2,119,189,0.14)'; c.lineWidth=1;
+  var guideLen=Math.max(w,h);
+  for(var d=0; d<180; d+=15){
+    var rad=d*Math.PI/180;
+    c.beginPath();
+    c.moveTo(-Math.cos(rad)*guideLen, -Math.sin(rad)*guideLen);
+    c.lineTo(Math.cos(rad)*guideLen, Math.sin(rad)*guideLen);
+    c.stroke();
+  }
+  c.fillStyle='rgba(2,119,189,0.4)';
+  c.beginPath(); c.arc(0,0,2.5,0,Math.PI*2); c.fill();
+  // 確定済みの図形（既存パーツは常に黒で描画し、本図での見え方に近づける）
+  c.strokeStyle='#1a1d27'; c.lineWidth=2.2; c.lineJoin='round';
+  stEd.shapes.forEach(function(shp){ traceCustomShape(c, shp, 1, '#1a1d27', 2.2); });
+  // プレビュー中の図形
+  if(preview){
+    c.strokeStyle='#0277bd'; c.lineWidth=2; c.setLineDash(preview.t==='part' ? [] : [4,3]);
+    traceCustomShape(c, preview, 1, '#0277bd', 2);
+    c.setLineDash([]);
+  }
+  c.restore();
+}
+function stampLocalPos(evt){
+  var rect=stEd.canvas.getBoundingClientRect();
+  var px=(evt.clientX-rect.left)*(stEd.w/rect.width);
+  var py=(evt.clientY-rect.top)*(stEd.h/rect.height);
+  return { x: px-stEd.w/2, y: py-stEd.h/2 };
+}
+function stampCurrentShape(sx,sy,ex,ey,tool){
+  if(tool==='line'){
+    var snapped=stampSnapAngleEnd(sx,sy,ex,ey);
+    return {t:'line', x1:sx, y1:sy, x2:snapped.x, y2:snapped.y};
+  } else if(tool==='rect'){
+    return {t:'rect', x1:sx, y1:sy, x2:ex, y2:ey};
+  } else if(tool==='circle'){
+    var rr=Math.sqrt((ex-sx)*(ex-sx)+(ey-sy)*(ey-sy));
+    return {t:'circle', cx:sx, cy:sy, r:rr};
+  } else if(tool==='triangle'){
+    return {t:'triangle', x1:sx, y1:sy, x2:ex, y2:ey};
+  } else if(tool==='part'){
+    if(!stEd.partFt) return null;
+    var pr=Math.sqrt((ex-sx)*(ex-sx)+(ey-sy)*(ey-sy));
+    return {t:'part', ft:stEd.partFt, cx:sx, cy:sy, r:Math.max(pr,10), rot:0};
+  }
+}
+function stampPointerDown(evt){
+  evt.preventDefault();
+  if(stEd.tool==='part' && !stEd.partFt){
+    openPartPicker();
+    return;
+  }
+  var p=stampLocalPos(evt);
+  stEd.drawing=true; stEd.sx=p.x; stEd.sy=p.y; stEd.cx=p.x; stEd.cy=p.y;
+  try{ stEd.canvas.setPointerCapture(evt.pointerId); }catch(e){}
+}
+function stampPointerMove(evt){
+  if(!stEd.drawing) return;
+  evt.preventDefault();
+  var p=stampLocalPos(evt);
+  stEd.cx=p.x; stEd.cy=p.y;
+  renderStampCanvas(stampCurrentShape(stEd.sx,stEd.sy,stEd.cx,stEd.cy,stEd.tool));
+}
+function stampPointerUp(evt){
+  if(!stEd.drawing) return;
+  stEd.drawing=false;
+  var dx=stEd.cx-stEd.sx, dy=stEd.cy-stEd.sy;
+  var shp=stampCurrentShape(stEd.sx,stEd.sy,stEd.cx,stEd.cy,stEd.tool);
+  var minMove = stEd.tool==='part' ? 4 : 3;
+  if(shp && Math.sqrt(dx*dx+dy*dy) > minMove){
+    stEd.shapes.push(shp);
+  }
+  renderStampCanvas(null);
+}
+function undoStamp(){
+  stEd.shapes.pop();
+  renderStampCanvas(null);
+}
+function clearStamp(){
+  stEd.shapes=[];
+  renderStampCanvas(null);
+}
+function openStampEditor(){
+  stEd.canvas = document.getElementById('stampCanvas');
+  stEd.ctx = stEd.canvas.getContext('2d');
+  stEd.shapes = [];
+  stEd.tool='line';
+  stEd.partFt=null;
+  setStampTool('line');
+  document.getElementById('stampNameInput').value='';
+  document.getElementById('stampOverlay').classList.add('vis');
+  setTimeout(function(){
+    var wrapEl = document.getElementById('stampCanvasWrap');
+    var r = wrapEl.getBoundingClientRect();
+    stEd.w = stEd.canvas.width = Math.round(r.width);
+    stEd.h = stEd.canvas.height = Math.round(r.height);
+    stEd.canvas.onpointerdown = stampPointerDown;
+    stEd.canvas.onpointermove = stampPointerMove;
+    stEd.canvas.onpointerup = stampPointerUp;
+    stEd.canvas.onpointercancel = stampPointerUp;
+    renderStampCanvas(null);
+  }, 30);
+}
+// ── マイ記号：既存パーツ（継手）ピッカー ─────────────────
+var PART_PICKER_GROUP = FL_GROUP_ISO.concat(NFL_GROUP_ISO);
+function openPartPicker(){
+  var grid = document.getElementById('partPickerGrid');
+  grid.innerHTML = PART_PICKER_GROUP.map(function(p){
+    return '<button class="fi" onclick="choosePart(\''+p[0]+'\')">'+svgIcon(p[0],true)+'<span>'+p[1]+'</span></button>';
+  }).join('');
+  document.getElementById('partPickerOverlay').classList.add('vis');
+}
+function closePartPicker(){
+  document.getElementById('partPickerOverlay').classList.remove('vis');
+  if(!stEd.partFt) setStampTool('line');
+}
+function choosePart(ft){
+  stEd.partFt = ft;
+  stEd.tool = 'part';
+  document.getElementById('partPickerOverlay').classList.remove('vis');
+  showToast(fitLabel(ft)+'を配置：キャンバスをドラッグして大きさと位置を決めてください');
+}
+function closeStampEditor(){
+  document.getElementById('stampOverlay').classList.remove('vis');
+  stEd.drawing=false;
+}
+function saveStamp(){
+  if(!stEd.shapes.length){
+    showToast('図形を1つ以上描いてください');
+    return;
+  }
+  var minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  function acc(x,y){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  stEd.shapes.forEach(function(shp){
+    if(shp.t==='line' || shp.t==='rect' || shp.t==='triangle'){
+      acc(shp.x1,shp.y1); acc(shp.x2,shp.y2);
+    } else if(shp.t==='circle' || shp.t==='part'){
+      acc(shp.cx-shp.r, shp.cy-shp.r); acc(shp.cx+shp.r, shp.cy+shp.r);
+    }
+  });
+  var centerX=(minX+maxX)/2, centerY=(minY+maxY)/2;
+  var halfExtent=Math.max((maxX-minX)/2, (maxY-minY)/2, 2);
+  var scale=34/halfExtent;
+  var normalized=stEd.shapes.map(function(shp){
+    if(shp.t==='circle'){
+      return {t:'circle', cx:round2((shp.cx-centerX)*scale), cy:round2((shp.cy-centerY)*scale), r:round2(shp.r*scale)};
+    } else if(shp.t==='part'){
+      return {t:'part', ft:shp.ft, cx:round2((shp.cx-centerX)*scale), cy:round2((shp.cy-centerY)*scale), r:round2(shp.r*scale), rot:shp.rot||0};
+    }
+    return {t:shp.t, x1:round2((shp.x1-centerX)*scale), y1:round2((shp.y1-centerY)*scale),
+             x2:round2((shp.x2-centerX)*scale), y2:round2((shp.y2-centerY)*scale)};
+  });
+  function round2(n){ return Math.round(n*100)/100; }
+  var name = (document.getElementById('stampNameInput').value||'').trim() || ('マイ記号'+(S.customFittings.length+1));
+  var id = 'custom_'+Date.now();
+  S.customFittings.push({ id:id, label:name, shapes:normalized });
+  saveCustomFittingsToStorage();
+  buildCustomGrid();
+  closeStampEditor();
+  setFT(id);
+  showToast('「'+name+'」を保存しました');
+}
+
+// ── マイ記号：管理（削除） ─────────────────────────
+function openCustomManage(){
+  renderCustomManageList();
+  document.getElementById('customManageOverlay').classList.add('vis');
+}
+function closeCustomManage(){
+  document.getElementById('customManageOverlay').classList.remove('vis');
+}
+function renderCustomManageList(){
+  var listEl = document.getElementById('customManageList');
+  if(!S.customFittings.length){
+    listEl.innerHTML = '<div class="custom-manage-empty">まだマイ記号がありません</div>';
+    return;
+  }
+  listEl.innerHTML = S.customFittings.map(function(f){
+    return '<div class="custom-manage-item"><span>'+f.label+'</span>'+
+      '<button class="custom-manage-del" onclick="deleteCustomFitting(\''+f.id+'\')">削除</button></div>';
+  }).join('');
+}
+function deleteCustomFitting(id){
+  if(!confirm('この記号を削除しますか？（既に図面に設置済みの分は形が表示されなくなります）')) return;
+  S.customFittings = S.customFittings.filter(function(f){ return f.id!==id; });
+  saveCustomFittingsToStorage();
+  buildCustomGrid();
+  renderCustomManageList();
+  showToast('削除しました');
+}
+
+// ── フルSVG生成（配管線・継手・溶接記号・寸法・注釈すべてをベクターで再現） ──
+// PDF/SVG出力の両方でこの関数を使う。canvas描画（drawFit/drawWeld等）と
+// 同じ座標計算式を使うことで、画面表示と出力結果の見た目を一致させる。
+function escSvgText(v){
+  return String(v).replace(/[&<>"']/g,function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+
+function svgFlangeBody(r,col,lwd,tiltDeg){
+  var h=r*0.75, L=rot30pt(-r*0.15,h,tiltDeg), R=rot30pt(r*0.15,h,tiltDeg);
+  return '<path d="M '+L.tx+' '+L.ty+' L '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' L '+L.bx+' '+L.by+' Z" fill="#fff"/>'+
+    '<path d="M '+L.tx+' '+L.ty+' L '+L.bx+' '+L.by+' M '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+'" stroke="'+col+'" stroke-width="'+(lwd*1.4)+'" fill="none"/>';
+}
+function svgValveBodyBody(r,col,lwd,hasFl,tiltDeg){
+  var h=r*0.7, R=rot30pt(r,h,tiltDeg), L=rot30pt(-r,h,tiltDeg);
+  var out='<path d="M '+L.tx+' '+L.ty+' L 0 0 L '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' L 0 0 L '+L.bx+' '+L.by+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round"/>';
+  if(hasFl){
+    var flGap=r*0.25, fh=h*1.05;
+    var rf=rot30pt(r+flGap,fh,tiltDeg), lf=rot30pt(-(r+flGap),fh,tiltDeg);
+    out += '<path d="M '+rf.tx+' '+rf.ty+' L '+rf.bx+' '+rf.by+' M '+lf.tx+' '+lf.ty+' L '+lf.bx+' '+lf.by+'" stroke="'+col+'" stroke-width="'+(lwd*1.3)+'" fill="none"/>';
+  }
+  return out;
+}
+function svgButterflyBody(r,col,lwd,hasFl,tiltDeg){
+  var left=-r*0.55, right=r*0.55, h=r*0.62;
+  var L=rot30pt(left,h,tiltDeg), R=rot30pt(right,h,tiltDeg);
+  var mx=(L.bx+R.tx)/2, my=(L.by+R.ty)/2;
+  var out='<rect x="'+(-r*0.95)+'" y="'+(-r*0.85)+'" width="'+(r*1.9)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
+    '<path d="M '+L.tx+' '+L.ty+' L '+L.bx+' '+L.by+' M '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' M '+L.bx+' '+L.by+' L '+R.tx+' '+R.ty+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'"/>'+
+    '<circle cx="'+mx+'" cy="'+my+'" r="'+(r*0.22)+'" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  if(hasFl){
+    var LF=rot30pt(left-r*0.18,h,tiltDeg), RF=rot30pt(right+r*0.18,h,tiltDeg);
+    out += '<path d="M '+LF.tx+' '+LF.ty+' L '+LF.bx+' '+LF.by+' M '+RF.tx+' '+RF.ty+' L '+RF.bx+' '+RF.by+'" stroke="'+col+'" stroke-width="'+(lwd*1.3)+'" fill="none"/>';
+  }
+  return out;
+}
+function svgCheckBody(r,col,lwd,hasFl,tiltDeg){
+  var left=-r*0.55, right=r*0.55, h=r*0.62;
+  var L=rot30pt(left,h,tiltDeg), R=rot30pt(right,h,tiltDeg);
+  var out='<rect x="'+(-r*0.95)+'" y="'+(-r*0.85)+'" width="'+(r*1.9)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
+    '<path d="M '+L.tx+' '+L.ty+' L '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' L '+L.bx+' '+L.by+' Z" fill="#fff"/>'+
+    '<path d="M '+L.tx+' '+L.ty+' L '+L.bx+' '+L.by+' M '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' M '+L.tx+' '+L.ty+' L '+R.bx+' '+R.by+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  if(hasFl){
+    var LF=rot30pt(left-r*0.18,h,tiltDeg), RF=rot30pt(right+r*0.18,h,tiltDeg);
+    out += '<path d="M '+LF.tx+' '+LF.ty+' L '+LF.bx+' '+LF.by+' M '+RF.tx+' '+RF.ty+' L '+RF.bx+' '+RF.by+'" stroke="'+col+'" stroke-width="'+(lwd*1.3)+'" fill="none"/>';
+  }
+  out += '<path d="M '+(-r*0.3)+' '+(r*0.95)+' L '+(r*0.3)+' '+(r*0.95)+' M '+(r*0.08)+' '+(r*0.95-r*0.18)+' L '+(r*0.3)+' '+(r*0.95)+' L '+(r*0.08)+' '+(r*0.95+r*0.18)+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  return out;
+}
+function svgReliefBody(r,col,lwd){
+  var flTopX=-0.78*r, flTopY=-1.30*r, flBotX=-0.78*r, flBotY=-0.12*r;
+  var t1AX=-0.55*r, t1AY=-1.19*r, t1BX=-0.59*r, t1BY=-0.04*r;
+  var pX=0.25*r, pY=-0.14*r;
+  var t2VX=-0.22*r, t2VY=0.54*r, t2BX=0.78*r, t2BY=1.11*r;
+  var outSX=-0.22*r, outSY=0.77*r, outEX=0.77*r, outEY=1.30*r;
+  var flVertAdjust = 0.15*r;
+  flTopY -= flVertAdjust; flBotY -= flVertAdjust;
+  var relRot=0*Math.PI/180, relCos=Math.cos(relRot), relSin=Math.sin(relRot);
+  function rotAroundP(x,y){
+    var dx=x-pX, dy=y-pY;
+    return { x: pX + dx*relCos - dy*relSin, y: pY + dx*relSin + dy*relCos };
+  }
+  var t1A=rotAroundP(t1AX,t1AY), t1B=rotAroundP(t1BX,t1BY);
+  var flRot=1*Math.PI/180, flCos=Math.cos(flRot), flSin=Math.sin(flRot);
+  var flLen = (flBotY - flTopY) / flCos;
+  var flTop = { x: flBotX + flLen*flSin, y: flBotY - flLen*flCos };
+
+  var shiftX = (outSX+outEX)/2, shiftY = (outSY+outEY)/2;
+  function sh(p){ return { x: p.x - shiftX, y: p.y - shiftY }; }
+  t1A = sh(t1A); t1B = sh(t1B);
+  var P = sh({x:pX,y:pY});
+  flTop = sh(flTop);
+  var flBot = sh({x:flBotX,y:flBotY});
+  var t2V = sh({x:t2VX,y:t2VY});
+  var t2B = sh({x:t2BX,y:t2BY});
+  var outS = sh({x:outSX,y:outSY});
+  var outE = sh({x:outEX,y:outEY});
+
+  return '<path d="M '+t1A.x+' '+t1A.y+' L '+t1B.x+' '+t1B.y+' L '+P.x+' '+P.y+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round"/>'+
+    '<path d="M '+P.x+' '+P.y+' L '+t2V.x+' '+t2V.y+' L '+t2B.x+' '+t2B.y+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round"/>'+
+    '<path d="M '+flTop.x+' '+flTop.y+' L '+flBot.x+' '+flBot.y+' M '+outS.x+' '+outS.y+' L '+outE.x+' '+outE.y+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linecap="round"/>';
+}
+function svgSolenoidBody(r,col,lwd,tiltDeg,actAng){
+  var body=svgValveBodyBody(r,col,lwd,true,tiltDeg);
+  var t=actAng||0; // 呼び出し側で確定した最終ローカル角度（tiltDegには依存しない）
+  var e2x=Math.sin(t), e2y=-Math.cos(t);
+  var stemLen=r*1.0, bw=r*0.9, bh=r*0.62;
+  var stemTopX=stemLen*e2x, stemTopY=stemLen*e2y;
+  var boxDist=stemLen+bh*0.45;
+  var boxCx=boxDist*e2x, boxCy=boxDist*e2y;
+  var hw=bw/2, hh=bh/2;
+  var bTL={x:boxCx-hw+hh*e2x, y:boxCy+hh*e2y}, bTR={x:boxCx+hw+hh*e2x, y:boxCy+hh*e2y};
+  var bBR={x:boxCx+hw-hh*e2x, y:boxCy-hh*e2y}, bBL={x:boxCx-hw-hh*e2x, y:boxCy-hh*e2y};
+  var boxPath='<path d="M '+bTL.x+' '+bTL.y+' L '+bTR.x+' '+bTR.y+' L '+bBR.x+' '+bBR.y+' L '+bBL.x+' '+bBL.y+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round"/>';
+  body += '<line x1="0" y1="0" x2="'+stemTopX+'" y2="'+stemTopY+'" stroke="'+col+'" stroke-width="'+lwd+'"/>'+boxPath;
+  return body;
+}
+function svgControlBody(r,col,lwd,tiltDeg,stemAng,domeExtraRad){
+  var body=svgValveBodyBody(r,col,lwd,true,tiltDeg);
+  var sx=Math.sin(stemAng||0), sy=-Math.cos(stemAng||0);
+  var stemLen=r*0.85, topX=stemLen*sx, topY=stemLen*sy;
+  var domeR=r*1.15/2, neckY=-domeR*0.25;
+  var domeDeg=((stemAng||0)+(domeExtraRad||0))*180/Math.PI;
+  var stemLine='<line x1="0" y1="0" x2="'+topX+'" y2="'+topY+'" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  var domeShape='<path d="M '+(-domeR)+' 0 L '+(-domeR)+' '+neckY+' A '+domeR+' '+domeR+' 0 0 1 '+domeR+' '+neckY+' L '+domeR+' 0 Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  body += stemLine+'<g transform="translate('+topX+' '+topY+') rotate('+domeDeg+')">'+domeShape+'</g>';
+  return body;
+}
+function svgHandleBody(r,col,lwd,tiltDeg,actAng){
+  var body=svgValveBodyBody(r,col,lwd,true,tiltDeg);
+  var stemLen=r*0.85, topY=-stemLen, spoke=r*0.5;
+  var actDeg=(actAng||0)*180/Math.PI;
+  var lines=[0,60,120].map(function(deg){
+    var t=deg*Math.PI/180, dx=Math.sin(t)*spoke, dy=-Math.cos(t)*spoke;
+    return 'M '+(-dx)+' '+(topY-dy)+' L '+dx+' '+(topY+dy);
+  }).join(' ');
+  var inner='<line x1="0" y1="0" x2="0" y2="'+topY+'" stroke="'+col+'" stroke-width="'+lwd+'"/>'+
+    '<path d="'+lines+'" stroke="'+col+'" stroke-width="'+lwd+'" fill="none"/>';
+  body += '<g transform="rotate('+actDeg+')">'+inner+'</g>';
+  return body;
+}
+function svgUnionBody(r,col,lwd){
+  return '<path d="M 0 '+(-r*0.55)+' L '+(r*0.55)+' 0 L 0 '+(r*0.55)+' L '+(-r*0.55)+' 0 Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+}
+function svgUnionNewBody(r,col,lwd,tiltDeg){
+  var hi=r*0.33, ho=r*0.82, sep=r*0.28;
+  var L=rot30pt(-sep,hi,tiltDeg), C=rot30pt(0,ho,tiltDeg), R=rot30pt(sep,hi,tiltDeg);
+  return '<rect x="'+(-sep*2)+'" y="'+(-ho)+'" width="'+(sep*4)+'" height="'+(ho*2)+'" fill="#fff"/>'+
+    '<path d="M '+L.tx+' '+L.ty+' L '+L.bx+' '+L.by+' M '+C.tx+' '+C.ty+' L '+C.bx+' '+C.by+' M '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+'" stroke="'+col+'" stroke-width="'+lwd+'" fill="none"/>';
+}
+function svgRCBody(r,col,lwd){
+  return '<path d="M '+(-r*0.85)+' '+(-r*0.62)+' L '+(r*0.85)+' '+(-r*0.22)+' L '+(r*0.85)+' '+(r*0.22)+' L '+(-r*0.85)+' '+(r*0.62)+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+}
+function svgREBody(r,col,lwd,shortBase){
+  var halfW=r*0.6, bottomY=r*0.55, rightTopY=-r*0.55;
+  var dy=2*halfW*Math.tan(30*Math.PI/180);
+  var leftTopY=rightTopY+dy;
+  var shift=shortBase?dy/2:0;
+  return '<path d="M '+(-halfW)+' '+(leftTopY-shift)+' L '+halfW+' '+(rightTopY-shift)+' L '+halfW+' '+(bottomY-shift)+' L '+(-halfW)+' '+(bottomY-shift)+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+}
+function svgSimpleMarkWrapped(ft,r,col,lwd,tiltDeg){
+  var isPlanMark = (tiltDeg === 0);
+  var extraRot = isPlanMark
+    ? ((ft === 'cap') ? 90 : (ft === 'plug') ? 180 : 0)
+    : ((ft === 'cap') ? 150 : (ft === 'plug') ? 240 : 0);
+  var effTilt=(ft==='fullcoupling')?0:(tiltDeg||0);
+  return '<g transform="rotate('+(effTilt+extraRot)+')">'+simpleMarkSvg(ft,col,r,lwd)+'</g>';
+}
+
+function fittingSvgMarkup(el){
+  var sp=w2s(el.wx,el.wy);
+  var isPlan=!!el.plan;
+  var col=el.color||PIPE_COLOR;
+  var ang=el.angle||0;
+  var tiltDeg=isPlan?0:30;
+  var r=18*S.zoom*(el.scale||1);
+  var lwd=1.8*S.zoom;
+  var hasFl=FL_TYPES.indexOf(el.ft)>=0;
+  var baseType=el.ft.replace(/^fl_/,'');
+  var body='';
+  if(el.ft.indexOf('custom_')===0){ body=customFittingSvgMarkup(el.ft,r,col,lwd); }
+  else if(baseType==='flange'){ body=svgFlangeBody(r,col,lwd,tiltDeg); }
+  else if(baseType==='gate'){ body=svgValveBodyBody(r,col,lwd,hasFl,tiltDeg); }
+  else if(baseType==='globe'){ body=svgValveBodyBody(r,col,lwd,hasFl,tiltDeg)+'<circle cx="0" cy="0" r="'+(r*0.22)+'" fill="'+col+'"/>'; }
+  else if(baseType==='ball'){ body=svgValveBodyBody(r,col,lwd,hasFl,tiltDeg)+'<circle cx="0" cy="0" r="'+(r*0.22)+'" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>'; }
+  else if(baseType==='butterfly'){ var rBFs=(isPlan && !hasFl) ? r*2 : r; body=svgButterflyBody(rBFs,col,lwd,hasFl,tiltDeg); }
+  else if(baseType==='check'){ var rCKs=(isPlan && !hasFl) ? r*2 : r; body=svgCheckBody(rCKs,col,lwd,hasFl,tiltDeg); }
+  else if(baseType==='relief'){ body=svgReliefBody(r,col,lwd); }
+  else if(baseType==='solenoid'){
+    body=svgSolenoidBody(r,col,lwd,tiltDeg,relativeLocalAngle(!!el.mirror, ang, 60));
+  }
+  else if(baseType==='control'){
+    body=svgControlBody(r,col,lwd,tiltDeg,relativeLocalAngle(!!el.mirror, ang, 60),330*Math.PI/180);
+  }
+  else if(baseType==='handle'){ var actAngH=el.mirror?(ang*Math.PI/180):(-ang*Math.PI/180); body=svgHandleBody(r,col,lwd,tiltDeg,actAngH); }
+  else if(baseType==='union'){ body=svgUnionBody(r,col,lwd); }
+  else if(el.ft==='union_new'){ body=svgUnionNewBody(r,col,lwd,tiltDeg); }
+  else if(el.ft==='rc'){ body=svgRCBody(r,col,lwd); }
+  else if(el.ft==='re'||el.ft==='re_short'){ body=svgREBody(r,col,lwd, el.ft==='re_short'); }
+  else if(SIMPLE_MARK_TYPES.indexOf(el.ft)>=0){ body=svgSimpleMarkWrapped(el.ft,r,col,lwd,tiltDeg); }
+  var transform='translate('+sp.x.toFixed(2)+' '+sp.y.toFixed(2)+') rotate('+ang+')'+(el.mirror?' scale(-1,1)':'');
+  return '<g transform="'+transform+'">'+body+'</g>';
+}
+
+function weldSvgMarkup(el){
+  var sp=w2s(el.wx,el.wy);
+  var col=el.color||'#1a1d27';
+  var ang=el.pipeAngle||0;
+  var wsc=el.scale||1;
+  var body;
+  if(el.wt==='weld_butt'){
+    body='<circle cx="0" cy="0" r="'+(3.2*S.zoom*wsc)+'" fill="'+col+'"/>';
+  } else {
+    body='<line x1="0" y1="'+(-6*S.zoom*wsc)+'" x2="0" y2="'+(6*S.zoom*wsc)+'" stroke="'+col+'" stroke-width="'+(2.2*S.zoom)+'"/>';
+  }
+  return '<g transform="translate('+sp.x.toFixed(2)+' '+sp.y.toFixed(2)+') rotate('+ang+')">'+body+'</g>';
+}
+
+function leaderSvgMarkup(el){
+  var p1=w2s(el.wx1,el.wy1), p2=w2s(el.wx2,el.wy2);
+  var col=el.color||'#1a1d27';
+  var goingRight=el.wx2>=el.wx1;
+  var tx=p2.x+(goingRight?4:-4);
+  return '<line x1="'+p1.x.toFixed(2)+'" y1="'+p1.y.toFixed(2)+'" x2="'+p2.x.toFixed(2)+'" y2="'+p2.y.toFixed(2)+'" stroke="'+col+'" stroke-width="'+(1.4*S.zoom)+'"/>'+
+    '<circle cx="'+p1.x.toFixed(2)+'" cy="'+p1.y.toFixed(2)+'" r="'+(2.4*S.zoom)+'" fill="'+col+'"/>'+
+    '<text x="'+tx.toFixed(2)+'" y="'+p2.y.toFixed(2)+'" text-anchor="'+(goingRight?'start':'end')+'" font-family="sans-serif" font-weight="bold" font-size="'+(12*S.zoom)+'" fill="'+col+'">'+escSvgText(el.text)+'</text>';
+}
+
+function textSvgMarkup(el){
+  var sp=w2s(el.wx,el.wy);
+  var col=el.color||'#d32f2f';
+  return '<text x="'+sp.x.toFixed(2)+'" y="'+sp.y.toFixed(2)+'" text-anchor="start" font-family="sans-serif" font-weight="bold" font-size="'+(12*S.zoom*(el.scale||1))+'" fill="'+col+'">'+escSvgText(el.text)+'</text>';
+}
+
+function dimSvgMarkup(el,col){
+  if(!S.showDim) return '';
+  var dx=el.wx2-el.wx1, dy=el.wy2-el.wy1;
+  var len=Math.sqrt(dx*dx+dy*dy);
+  if(len<0.05) return '';
+  var disp=(el.dimText!==undefined) ? el.dimText : (Math.round(len*10)/10).toFixed(1);
+  if(disp === '') return ''; // 意図的に空欄にした場合はSVG/PDFにも何も出力しない
+  var p1=w2s(el.wx1,el.wy1), p2=w2s(el.wx2,el.wy2);
+  var mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+  var ang=Math.atan2(p2.y-p1.y, p2.x-p1.x);
+  var dispAng=ang;
+  if(dispAng>Math.PI/2||dispAng<-Math.PI/2) dispAng+=Math.PI;
+  var fs=Math.max(9, Math.min(13, 10*S.zoom));
+  var offset=lw()/2+fs+3;
+  ctx.font=fs+'px sans-serif';
+  var tw=ctx.measureText(disp).width;
+  var degAng=dispAng*180/Math.PI;
+  return '<g transform="translate('+mx.toFixed(2)+' '+my.toFixed(2)+') rotate('+degAng.toFixed(2)+')">'+
+    '<rect x="'+(-tw/2-3)+'" y="'+(-offset-fs/2-1)+'" width="'+(tw+6)+'" height="'+(fs+2)+'" fill="rgba(255,255,255,0.85)"/>'+
+    '<text x="0" y="'+(-offset)+'" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif" font-size="'+fs+'" fill="'+col+'">'+escSvgText(disp)+'</text></g>';
+}
+
+// キャンバス表示の全要素をベクターSVGとして組み立てる（PDF/SVG出力共通）
+function buildFullSvg(){
+  var w=canvas.width, h=canvas.height;
+  var pipeParts=[], otherParts=[];
+  S.els.forEach(function(el){
+    if(el.kind==='pipe'){
+      var p1=w2s(el.wx1,el.wy1), p2=w2s(el.wx2,el.wy2);
+      var col=el.color||PIPE_COLOR;
+      var isExisting=el.status==='existing';
+      var strokeCol=isExisting?'#9e9e9e':col;
+      var dash=isExisting?' stroke-dasharray="'+(7*S.zoom)+','+(5*S.zoom)+'"':'';
+      pipeParts.push('<line x1="'+p1.x.toFixed(2)+'" y1="'+p1.y.toFixed(2)+'" x2="'+p2.x.toFixed(2)+'" y2="'+p2.y.toFixed(2)+'" stroke="'+strokeCol+'" stroke-width="'+lw(el.sz)+'" stroke-linecap="round"'+dash+'/>');
+      pipeParts.push(dimSvgMarkup(el,col));
+    } else if(el.kind==='fitting'){
+      otherParts.push(fittingSvgMarkup(el));
+    } else if(el.kind==='weld'){
+      otherParts.push(weldSvgMarkup(el));
+    } else if(el.kind==='leader'){
+      otherParts.push(leaderSvgMarkup(el));
+    } else if(el.kind==='northarrow'){
+      otherParts.push(northArrowSvgMarkup(el));
+    } else if(el.kind==='marker'){
+      otherParts.push(markerSvgMarkup(el));
+    } else if(el.kind==='text'){
+      otherParts.push(textSvgMarkup(el));
+    }
+  });
+  // 配管線を先に、継手等を後に並べることで、配管線が継手記号を突き抜けて見えないようにする
+  var parts = pipeParts.concat(otherParts);
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="background:#fff">'+parts.join('\n')+'</svg>';
+}
+
+// 白背景のPNG Blobを生成する共通ヘルパー
+function makeWhiteBgCanvas(){
+  var tmp=document.createElement('canvas');
+  tmp.width=canvas.width; tmp.height=canvas.height;
+  var tc=tmp.getContext('2d');
+  tc.fillStyle='#ffffff'; tc.fillRect(0,0,tmp.width,tmp.height);
+  tc.drawImage(canvas,0,0);
+  return tmp;
+}
+
+function exportPNG(){
+  var tmp = makeWhiteBgCanvas();
+  var a=document.createElement('a');a.download='pipe-iso.png';a.href=tmp.toDataURL();a.click();
+  showToast('PNG保存（白背景）');
+}
+
+// Excelへの直接貼り付け用：画像をクリップボードにコピー
+async function copyImageForExcel(){
+  if(!navigator.clipboard || !window.ClipboardItem){
+    showToast('この環境はクリップボードコピーに対応していません。PNG保存をご利用ください');
+    return;
+  }
+  try{
+    var tmp = makeWhiteBgCanvas();
+    var blob = await new Promise(function(resolve){ tmp.toBlob(resolve, 'image/png'); });
+    if(!blob){ showToast('画像の生成に失敗しました'); return; }
+    await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+    showToast('コピーしました。Excelにそのまま貼り付けできます');
+  } catch(err){
+    showToast('コピーに失敗しました。PNG保存をご利用ください');
+  }
+}
+
+// メールに画像を添付して送付（端末の共有シートを開く）
+async function shareImageByMail(){
+  try{
+    var tmp = makeWhiteBgCanvas();
+    var blob = await new Promise(function(resolve){ tmp.toBlob(resolve, 'image/png'); });
+    if(!blob){ showToast('画像の生成に失敗しました'); return; }
+    var file = new File([blob], 'pipe-iso.png', { type:'image/png' });
+    // ① 画像ファイル付きで共有（Gmail/Outlook/LINE等、対応アプリが選べる）
+    if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file], title:'配管アイソメ図' });
+      return;
+    }
+    // ② ファイル共有に非対応の環境でも、テキストのみの共有シートは開ける場合がある
+    if(navigator.share){
+      await navigator.share({ title:'配管アイソメ図', text:'配管アイソメ図を確認してください（画像は別途PNG保存をご利用ください）' });
+      return;
+    }
+    // ③ 共有API自体が使えない環境ではPNGをダウンロードしてから案内
+    var a=document.createElement('a'); a.download='pipe-iso.png'; a.href=URL.createObjectURL(blob); a.click();
+    showToast('画像を保存しました。共有したいアプリから添付してください');
+  } catch(err){
+    if(err && err.name === 'AbortError') return; // 共有をキャンセルした場合は何もしない
+    showToast('送付に失敗しました。PNG保存をご利用ください');
+  }
+}
+
+function exportSVG(){
+  var svg = buildFullSvg();
+  var b=new Blob([svg],{type:'image/svg+xml'}),a=document.createElement('a');
+  a.download='pipe-iso.svg';a.href=URL.createObjectURL(b);a.click();showToast('SVG保存（ベクター）');
+}
+
+// PDF出力：ベクターSVGを新規タブに開き、ブラウザ標準の印刷機能で
+// 「PDFに保存」してもらう方式。外部ライブラリ不要でSafariでも動作する。
+// 線・記号が個別のパスとして書き出されるため、Acrobat Proで移動・編集できる。
+function exportPDF(){
+  var svg = buildFullSvg();
+  var w = canvas.width, h = canvas.height;
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>PipeISO</title>'+
+    '<style>@page{margin:10mm;size:landscape;} html,body{margin:0;padding:0;background:#fff;}'+
+    'svg{display:block;width:100%;height:auto;}</style></head><body>'+
+    svg+
+    '<script>window.onload=function(){setTimeout(function(){window.print();},250);};<\/script>'+
+    '</body></html>';
+  var win = window.open('', '_blank');
+  if(!win){
+    showToast('新規タブがブロックされました。ポップアップを許可してから再度お試しください');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  showToast('印刷画面で「PDFに保存」を選択してください');
+}
+
+// ── 作図データの保存／読込（.pipeiso = JSONファイル） ──────────
+// 画像出力（PNG/SVG/PDF）とは別に、あとで編集を再開できるよう
+// 図面データ（S.els）そのものをファイルに保存・復元する。
+var PROJECT_FILE_VERSION = 1;
+function saveProjectFile(){
+  var data = { app:'PipeISO', ver:PROJECT_FILE_VERSION, savedAt:new Date().toISOString(), els:S.els };
+  var json = JSON.stringify(data, null, 0);
+  var blob = new Blob([json], {type:'application/json'});
+  var a = document.createElement('a');
+  var ts = new Date();
+  var pad=function(n){return (n<10?'0':'')+n;};
+  var fname = 'pipe-iso-'+ts.getFullYear()+pad(ts.getMonth()+1)+pad(ts.getDate())+'-'+pad(ts.getHours())+pad(ts.getMinutes())+'.pipeiso';
+  a.download = fname; a.href = URL.createObjectURL(blob); a.click();
+  showToast('作図データを保存しました（'+fname+'）');
+}
+// 作図データ（.pipeiso）を、画像共有と同じ仕組み（端末の共有シート）でメール等へ直接送付する。
+// 受け取った側がこのアプリの「📂開く」からそのまま読み込めば続きから編集できる。
+async function shareProjectFile(){
+  try{
+    var data = { app:'PipeISO', ver:PROJECT_FILE_VERSION, savedAt:new Date().toISOString(), els:S.els };
+    var json = JSON.stringify(data, null, 0);
+    var ts = new Date();
+    var pad=function(n){return (n<10?'0':'')+n;};
+    var fname = 'pipe-iso-'+ts.getFullYear()+pad(ts.getMonth()+1)+pad(ts.getDate())+'-'+pad(ts.getHours())+pad(ts.getMinutes())+'.pipeiso';
+    var blob = new Blob([json], {type:'application/json'});
+    var file = new File([blob], fname, { type:'application/json' });
+    // ① ファイル付きで共有（Gmail/Outlook/LINE等、対応アプリが選べる）
+    if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file], title:'配管アイソメ 作図データ' });
+      return;
+    }
+    // ② ファイル共有に非対応の環境ではダウンロードしてから案内
+    var a=document.createElement('a'); a.download=fname; a.href=URL.createObjectURL(blob); a.click();
+    showToast('作図データを保存しました。共有したいアプリから添付してください');
+  } catch(err){
+    if(err && err.name === 'AbortError') return; // 共有をキャンセルした場合は何もしない
+    showToast('送付に失敗しました。「作図データを保存」をご利用ください');
+  }
+}
+function triggerLoadFile(){
+  document.getElementById('loadFileInput').value = '';
+  document.getElementById('loadFileInput').click();
+}
+function handleLoadFile(evt){
+  var file = evt.target.files && evt.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var data;
+    try{ data = JSON.parse(e.target.result); }
+    catch(err){ showToast('ファイルの読み込みに失敗しました（形式が正しくありません）'); return; }
+    if(!data || !Array.isArray(data.els)){ showToast('このファイルは配管アイソメの作図データではありません'); return; }
+    if(S.els.length){
+      if(!confirm('現在の作図内容を破棄して、選択したファイルを開きますか？')) return;
+    }
+    saveH();
+    S.els = data.els;
+    S.sel=null; S.multiSel=[]; hidePop();
+    if(S.dragMode) endDragMode();
+    render();
+    showToast('作図データを読み込みました');
+  };
+  reader.onerror = function(){ showToast('ファイルの読み込みに失敗しました'); };
+  reader.readAsText(file);
+}
+
+// ── 自動保存（ブラウザのlocalStorageに下書きを保持。誤ってタブを閉じた場合の保険） ──
+var AUTOSAVE_KEY = 'pipeiso_autosave_v1';
+var autosaveTimer=null;
+function scheduleAutosave(){
+  if(autosaveTimer) clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(function(){
+    try{
+      if(S.els && S.els.length){
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ savedAt:Date.now(), els:S.els }));
+      } else {
+        localStorage.removeItem(AUTOSAVE_KEY);
+      }
+    }catch(e){ /* 保存できない環境（プライベートモード等）では何もしない */ }
+  }, 600);
+}
+// render()実行のたびに自動保存を予約する（元のrender関数をラップ）
+var _renderOrig = render;
+render = function(){ _renderOrig(); scheduleAutosave(); };
+
+function tryRestoreAutosave(){
+  var raw;
+  try{ raw = localStorage.getItem(AUTOSAVE_KEY); }catch(e){ return; }
+  if(!raw) return;
+  var data;
+  try{ data = JSON.parse(raw); }catch(e){ return; }
+  if(!data || !Array.isArray(data.els) || !data.els.length) return;
+  var when = data.savedAt ? new Date(data.savedAt).toLocaleString('ja-JP') : '';
+  if(confirm('前回の続き（自動保存 '+when+'）を復元しますか？\n「キャンセル」で新規作成します。')){
+    S.els = data.els;
+  } else {
+    try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
+  }
+}
+
+// ── INIT ───────────────────────────────────────
+function initApp(){
+  resize();
+  S.customFittings = loadCustomFittings();
+  buildFitGrids();
+  initCollapsedSections();
+  document.getElementById('bDimToggle').classList.add('on');
+  S.px=canvas.width/2 - 2*PX_PER_M;
+  S.py=canvas.height/2;
+  S.els=[];
+  tryRestoreAutosave();
+  render();
+}
+setTimeout(function(){
+  bootWithLicenseCheck(initApp);
+},80);
+</script>
+</body>
+</html>
