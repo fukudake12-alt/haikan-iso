@@ -622,11 +622,6 @@ function rotateStep(){
   render();
 }
 
-function showRotPanel(el){
-  // 浮動パネルは廃止。ステータス表示で角度を確認できる（updateSt内で対応）
-}
-function hideRotPanel(){}
-
 // ── COORDS ─────────────────────────────────────
 function w2s(wx,wy){ return {x:S.px+wx*PX_PER_M*S.zoom, y:S.py+wy*PX_PER_M*S.zoom}; }
 function s2w(sx,sy){ return {x:(sx-S.px)/(PX_PER_M*S.zoom), y:(sy-S.py)/(PX_PER_M*S.zoom)}; }
@@ -1737,16 +1732,6 @@ function hitTest(sx,sy){
   }
   return null;
 }
-function hitEndpoint(sx,sy){
-  var th=Math.max(16,SNAP_DIST_PX);
-  for(var i=S.els.length-1;i>=0;i--){
-    var e=S.els[i]; if(e.kind!=='pipe') continue;
-    var p1=w2s(e.wx1,e.wy1),p2=w2s(e.wx2,e.wy2);
-    if(dist2(sx,sy,p1.x,p1.y)<th) return {el:e,end:0};
-    if(dist2(sx,sy,p2.x,p2.y)<th) return {el:e,end:1};
-  }
-  return null;
-}
 function dist2(ax,ay,bx,by){ return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by)); }
 function segD(p,a,b){
   var dx=b.x-a.x,dy=b.y-a.y;
@@ -2162,7 +2147,6 @@ function activateLongPress(pos){
 }
 
 function endDragMode(){
-  hideRotPanel();
   S.dragMode=null; S.dragEl=null; S.dragging=false; S.snapPt=null; S.justGrabbed=false; S.dragSubMode=null; S.dragEnd=null;
   showToast('✅ 確定'); updateMirrorButton(); render();
 }
@@ -2212,7 +2196,6 @@ function eraseAction(){
     var target = S.dragEl;
     var mergePt = (target.kind==='fitting') ? {x:target.wx, y:target.wy} : null;
     S.els = S.els.filter(function(e){ return e !== target; });
-    hideRotPanel();
     if(S.sel===target) S.sel=null;
     if(S.lastFit===target) S.lastFit=null;
     S.dragMode=null; S.dragEl=null; S.dragging=false; S.snapPt=null; S.justGrabbed=false; S.dragSubMode=null; S.dragEnd=null;
@@ -2387,12 +2370,10 @@ function handleDown(pos){
 }
 
 // ── PAN / ZOOM ─────────────────────────────────
-function doZoom(f){zoomAt(f,canvas.width/2,canvas.height/2);}
 function zoomAt(f,cx,cy){
   var nz=Math.max(0.12,Math.min(8,S.zoom*f)),fc=nz/S.zoom;
   S.px=cx-fc*(cx-S.px);S.py=cy-fc*(cy-S.py);S.zoom=nz;render();
 }
-function resetView(){S.zoom=1;S.px=canvas.width/2;S.py=canvas.height/2;render();}
 function toggleGrid(){S.showGrid=!S.showGrid;render();}
 function currentMirrorTarget(){
   if(S.dragEl && S.dragEl.kind==='fitting') return S.dragEl;
@@ -3094,64 +3075,6 @@ function buildFullSvg(){
   return '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="background:#fff">'+parts.join('\n')+'</svg>';
 }
 
-// 白背景のPNG Blobを生成する共通ヘルパー
-function makeWhiteBgCanvas(){
-  var tmp=document.createElement('canvas');
-  tmp.width=canvas.width; tmp.height=canvas.height;
-  var tc=tmp.getContext('2d');
-  tc.fillStyle='#ffffff'; tc.fillRect(0,0,tmp.width,tmp.height);
-  tc.drawImage(canvas,0,0);
-  return tmp;
-}
-
-function exportPNG(){
-  var tmp = makeWhiteBgCanvas();
-  var a=document.createElement('a');a.download='pipe-iso.png';a.href=tmp.toDataURL();a.click();
-  showToast('PNG保存（白背景）');
-}
-
-// Excelへの直接貼り付け用：画像をクリップボードにコピー
-async function copyImageForExcel(){
-  if(!navigator.clipboard || !window.ClipboardItem){
-    showToast('この環境はクリップボードコピーに対応していません。PNG保存をご利用ください');
-    return;
-  }
-  try{
-    var tmp = makeWhiteBgCanvas();
-    var blob = await new Promise(function(resolve){ tmp.toBlob(resolve, 'image/png'); });
-    if(!blob){ showToast('画像の生成に失敗しました'); return; }
-    await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
-    showToast('コピーしました。Excelにそのまま貼り付けできます');
-  } catch(err){
-    showToast('コピーに失敗しました。PNG保存をご利用ください');
-  }
-}
-
-// メールに画像を添付して送付（端末の共有シートを開く）
-async function shareImageByMail(){
-  try{
-    var tmp = makeWhiteBgCanvas();
-    var blob = await new Promise(function(resolve){ tmp.toBlob(resolve, 'image/png'); });
-    if(!blob){ showToast('画像の生成に失敗しました'); return; }
-    var file = new File([blob], 'pipe-iso.png', { type:'image/png' });
-    // ① 画像ファイル付きで共有（Gmail/Outlook/LINE等、対応アプリが選べる）
-    if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
-      await navigator.share({ files:[file], title:'配管アイソメ図' });
-      return;
-    }
-    // ② ファイル共有に非対応の環境でも、テキストのみの共有シートは開ける場合がある
-    if(navigator.share){
-      await navigator.share({ title:'配管アイソメ図', text:'配管アイソメ図を確認してください（画像は別途PNG保存をご利用ください）' });
-      return;
-    }
-    // ③ 共有API自体が使えない環境ではPNGをダウンロードしてから案内
-    var a=document.createElement('a'); a.download='pipe-iso.png'; a.href=URL.createObjectURL(blob); a.click();
-    showToast('画像を保存しました。共有したいアプリから添付してください');
-  } catch(err){
-    if(err && err.name === 'AbortError') return; // 共有をキャンセルした場合は何もしない
-    showToast('送付に失敗しました。PNG保存をご利用ください');
-  }
-}
 
 function exportSVG(){
   var svg = buildFullSvg();
@@ -3176,31 +3099,8 @@ async function shareSvgFile(){
   }
 }
 
-// PDF出力：ベクターSVGを新規タブに開き、ブラウザ標準の印刷機能で
-// 「PDFに保存」してもらう方式。外部ライブラリ不要でSafariでも動作する。
-// 線・記号が個別のパスとして書き出されるため、Acrobat Proで移動・編集できる。
-function exportPDF(){
-  var svg = buildFullSvg();
-  var w = canvas.width, h = canvas.height;
-  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>PipeISO</title>'+
-    '<style>@page{margin:10mm;size:landscape;} html,body{margin:0;padding:0;background:#fff;}'+
-    'svg{display:block;width:100%;height:auto;}</style></head><body>'+
-    svg+
-    '<script>window.onload=function(){setTimeout(function(){window.print();},250);};<\/script>'+
-    '</body></html>';
-  var win = window.open('', '_blank');
-  if(!win){
-    showToast('新規タブがブロックされました。ポップアップを許可してから再度お試しください');
-    return;
-  }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  showToast('印刷画面で「PDFに保存」を選択してください');
-}
-
 // ── 作図データの保存／読込（.pipeiso = JSONファイル） ──────────
-// 画像出力（PNG/SVG/PDF）とは別に、あとで編集を再開できるよう
+// 画像出力（PNG/SVG）とは別に、あとで編集を再開できるよう
 // 図面データ（S.els）そのものをファイルに保存・復元する。
 var PROJECT_FILE_VERSION = 1;
 function saveProjectFile(){
@@ -3213,30 +3113,6 @@ function saveProjectFile(){
   var fname = 'pipe-iso-'+ts.getFullYear()+pad(ts.getMonth()+1)+pad(ts.getDate())+'-'+pad(ts.getHours())+pad(ts.getMinutes())+'.json';
   a.download = fname; a.href = URL.createObjectURL(blob); a.click();
   showToast('作図データを保存しました（'+fname+'）');
-}
-// 作図データ（.pipeiso）を、画像共有と同じ仕組み（端末の共有シート）でメール等へ直接送付する。
-// 受け取った側がこのアプリの「📂開く」からそのまま読み込めば続きから編集できる。
-async function shareProjectFile(){
-  try{
-    var data = { app:'PipeISO', ver:PROJECT_FILE_VERSION, savedAt:new Date().toISOString(), els:S.els };
-    var json = JSON.stringify(data, null, 0);
-    var ts = new Date();
-    var pad=function(n){return (n<10?'0':'')+n;};
-    var fname = 'pipe-iso-'+ts.getFullYear()+pad(ts.getMonth()+1)+pad(ts.getDate())+'-'+pad(ts.getHours())+pad(ts.getMinutes())+'.json';
-    var blob = new Blob([json], {type:'application/json'});
-    var file = new File([blob], fname, { type:'application/json' });
-    // ① ファイル付きで共有（Gmail/Outlook/LINE等、対応アプリが選べる）
-    if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
-      await navigator.share({ files:[file], title:'配管アイソメ 作図データ' });
-      return;
-    }
-    // ② ファイル共有に非対応の環境ではダウンロードしてから案内
-    var a=document.createElement('a'); a.download=fname; a.href=URL.createObjectURL(blob); a.click();
-    showToast('作図データを保存しました。共有したいアプリから添付してください');
-  } catch(err){
-    if(err && err.name === 'AbortError') return; // 共有をキャンセルした場合は何もしない
-    showToast('送付に失敗しました。「作図データを保存」をご利用ください');
-  }
 }
 function triggerLoadFile(){
   document.getElementById('loadFileInput').value = '';
