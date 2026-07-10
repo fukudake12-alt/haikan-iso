@@ -6,10 +6,9 @@
 <!-- ホーム画面に追加した際、Safariのアドレスバーなしの全画面表示（アプリのような見た目）で起動させるための指定 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PipeISO">
-<!-- Android Chrome向け（https://で配信された場合に「ホーム画面に追加」で全画面起動できるようにする） -->
+<meta name="apple-mobile-web-app-title" content="スマスケ">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href='data:application/manifest+json,{"name":"PipeISO","short_name":"PipeISO","display":"standalone","start_url":"."}'>
+<link rel="manifest" href='data:application/manifest+json,{"name":"スマスケ","short_name":"スマスケ","display":"standalone","start_url":"."}'>
 <title>スマホでスケッチ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -123,12 +122,12 @@ header{
   max-height:calc(100% - 76px);overflow-y:auto;
 }
 .multisel-panel.vis{display:block;}
-/* 配管の色・太さ編集パネル：範囲選択パネルと同じく右側に縦並びで表示（重ならないよう下寄りに配置） */
+/* 配管の色・太さ編集パネル：範囲選択パネルと同じく右上に表示 */
 .pipe-edit-panel{
-  position:absolute;bottom:70px;right:8px;width:96px;
+  position:absolute;top:56px;right:8px;width:96px;
   background:#ffffff;border:1px solid #0277bd;border-radius:10px;
   padding:8px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.18);
-  max-height:calc(100% - 150px);overflow-y:auto;
+  max-height:calc(100% - 76px);overflow-y:auto;
 }
 .pipe-edit-panel.vis{display:block;}
 /* 背景PDF（下敷き）の透明度・サイズ調整パネル：左上、ステータス表示の下に配置 */
@@ -309,7 +308,7 @@ header{
 </div>
 
 <header>
-  <div class="logo">PipeISO <small>配管アイソメ</small></div>
+  <div class="logo">PipeISO <small>スマスケ</small></div>
   <button class="h-btn" onclick="triggerLoadFile()">📂開く</button>
   <button class="h-btn" onclick="triggerLoadPdf()">📄PDF/写真取込</button>
   <button class="h-btn" onclick="openShareSheet()">💾保存</button>
@@ -378,36 +377,61 @@ header{
   <div class="drawer" id="drawer">
     <div class="drawer-scroll">
 
-    <!-- ■ 配管の分割／結合 -->
-    <div class="dsec">
-      <div class="dlabel">配管操作</div>
-      <div class="dg c2">
-        <button class="di" onclick="setTool('split')">✂<br>分割</button>
-        <button class="di" onclick="setTool('join')">🔗<br>結合</button>
+    <!-- ■ 基本操作 -->
+    <div class="dsec dsec-toggle" onclick="toggleSection('basicOps')">
+      <div class="dlabel" style="color:#5c6b8a;">▷ 基本操作 <span class="dcaret" id="caretBasicOps">▾</span></div>
+    </div>
+    <div id="secBasicOps">
+      <div class="dsec">
+        <div class="dlabel">描画色・太さ</div>
+        <div class="rot-btns" style="grid-template-columns:repeat(3,1fr);margin-top:4px;" id="drawColorSwatches"></div>
+        <div class="rot-btns" style="grid-template-columns:repeat(3,1fr);margin-top:4px;" id="drawThicknessBtns"></div>
       </div>
-      <div class="dg c2" style="margin-top:6px;">
-        <button class="di" onclick="setTool('trim')">✂️<br>トリム</button>
-        <button class="di" onclick="setTool('extend')">📏<br>延長</button>
+      <div class="dsec">
+        <button class="di" style="width:100%" onclick="toggleGrid()">⊞ グリッド切替</button>
+      </div>
+      <div class="dsec">
+        <button class="di" id="bDimToggle" style="width:100%" onclick="toggleDimVisible()">📏 寸法 ON/OFF</button>
+      </div>
+      <div class="dsec">
+        <button class="di" style="width:100%" onclick="setTool('northarrow')">🧭 プラントノース設置</button>
       </div>
     </div>
     <div class="div"></div>
 
-    <!-- 空白 -->
-    <div style="height:10px"></div>
-
-    <!-- ■ 既設／新設 -->
-    <div class="dsec">
-      <div class="dlabel">既設／新設スタンプ</div>
-      <div class="dg c2">
-        <button class="di" onclick="setTool('stampExisting')">┄┄<br>既設</button>
-        <button class="di" onclick="setTool('stampNew')">──<br>新設</button>
+    <!-- ■ 配管の分割／結合／既設・新設スタンプ -->
+    <div class="dsec dsec-toggle" onclick="toggleSection('pipeOps')">
+      <div class="dlabel" style="color:#ef6c00;">▷ 配管操作 <span class="dcaret" id="caretPipeOps">▾</span></div>
+    </div>
+    <div id="secPipeOps">
+      <div class="dsec">
+        <div class="dg c2">
+          <button class="di" onclick="setTool('split')">✂<br>分割</button>
+          <button class="di" onclick="setTool('join')">🔗<br>結合</button>
+        </div>
+        <div class="dg c2" style="margin-top:6px;">
+          <button class="di" onclick="setTool('trim')">✂️<br>トリム</button>
+          <button class="di" onclick="setTool('extend')">📏<br>延長</button>
+        </div>
+      </div>
+      <div class="div"></div>
+      <div class="dsec dsec-toggle" onclick="toggleSection('stamp')">
+        <div class="dlabel">既設／新設スタンプ <span class="dcaret" id="caretStamp">▾</span></div>
+      </div>
+      <div id="secStamp">
+        <div class="dsec">
+          <div class="dg c2">
+            <button class="di" onclick="setTool('stampExisting')">┄┄<br>既設</button>
+            <button class="di" onclick="setTool('stampNew')">──<br>新設</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="div"></div>
 
     <!-- ■ 溶接部 -->
     <div class="dsec dsec-toggle" onclick="toggleSection('weld')">
-      <div class="dlabel">溶接部 <span class="dcaret" id="caretWeld">▾</span></div>
+      <div class="dlabel" style="color:#6a1b9a;">▷ 溶接部 <span class="dcaret" id="caretWeld">▾</span></div>
     </div>
     <div id="secWeld">
       <div class="dsec">
@@ -417,10 +441,17 @@ header{
     <div class="div"></div>
 
     <!-- ■ アイソメ用（上段）-->
-    <div class="dsec">
-      <div class="dlabel" style="color:#0277bd;">▷ アイソメ用</div>
+    <div class="dsec dsec-toggle" onclick="toggleSection('iso')">
+      <div class="dlabel" style="color:#0277bd;">▷ アイソメ用 <span class="dcaret" id="caretIso">▾</span></div>
     </div>
     <div id="secIso">
+      <div class="dsec dsec-toggle" onclick="toggleSection('isoFit')">
+        <div class="dlabel">継手 <span class="dcaret" id="caretIsoFit">▾</span></div>
+      </div>
+      <div id="secIsoFit">
+        <div class="dsec"><div class="dg c1" id="fitGridIso"></div></div>
+      </div>
+      <div class="div"></div>
       <div class="dsec dsec-toggle" onclick="toggleSection('isoFl')">
         <div class="dlabel">フランジ付 <span class="dcaret" id="caretIsoFl">▾</span></div>
       </div>
@@ -446,10 +477,17 @@ header{
     <div class="div"></div>
 
     <!-- ■ 平面図用（下段）-->
-    <div class="dsec">
-      <div class="dlabel" style="color:#2e7d32;">▷ 平面図用</div>
+    <div class="dsec dsec-toggle" onclick="toggleSection('plan')">
+      <div class="dlabel" style="color:#2e7d32;">▷ 平面図用 <span class="dcaret" id="caretPlan">▾</span></div>
     </div>
     <div id="secPlan">
+      <div class="dsec dsec-toggle" onclick="toggleSection('planFit')">
+        <div class="dlabel">継手 <span class="dcaret" id="caretPlanFit">▾</span></div>
+      </div>
+      <div id="secPlanFit">
+        <div class="dsec"><div class="dg c1" id="fitGridPlan"></div></div>
+      </div>
+      <div class="div"></div>
       <div class="dsec dsec-toggle" onclick="toggleSection('planFl')">
         <div class="dlabel">フランジ付 <span class="dcaret" id="caretPlanFl">▾</span></div>
       </div>
@@ -474,16 +512,6 @@ header{
     </div>
     <div class="div"></div>
 
-    <!-- ■ その他 -->
-    <div class="dsec">
-      <button class="di" style="width:100%" onclick="toggleGrid()">⊞ グリッド切替</button>
-    </div>
-    <div class="dsec">
-      <button class="di" id="bDimToggle" style="width:100%" onclick="toggleDimVisible()">📏 寸法 ON/OFF</button>
-    </div>
-    <div class="dsec">
-      <button class="di" style="width:100%" onclick="setTool('northarrow')">🧭 プラントノース設置</button>
-    </div>
     <div style="height:16px"></div>
     </div>
   </div>
@@ -641,6 +669,8 @@ var S = {
   longPressTimer:null, longPressFired:false, downPos:null, justGrabbed:false,
   // 前回の継手角度（連続配置）
   lastFitAngle:0, lastFit:null,
+  // 現在の描画色（null=標準色(黒)。値がある間は配管・継手・ホースを新規作成する際に自動でこの色になる）
+  drawColor:null,
   // 平面図用の継手が選択されているか（true時は設置角度を自動で付けない）
   ftPlan:false,
   // 範囲選択
@@ -1390,10 +1420,13 @@ function simpleMarkSvg(ft, col, r, lwd){
   return '';
 }
 
-var FL_GROUP_ISO   = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['fl_relief','安全弁'],['fl_solenoid','電磁弁'],['fl_control','調節弁'],['flange','フランジ'],['strainer','ストレーナー'],['y_strainer','Y型ストレーナー'],['flex','フレキ']];
-var NFL_GROUP_ISO  = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁'],['union_new','ユニオン'],['union','六角ニップル'],['rc','RC'],['re_short','RE'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ']];
-var FL_GROUP_PLAN  = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['flange','フランジ'],['strainer','ストレーナー'],['y_strainer','Y型ストレーナー'],['flex','フレキ']];
-var NFL_GROUP_PLAN = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁'],['union_new','ユニオン'],['union','六角ニップル'],['rc','RC'],['re_short','RE'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ']];
+var FL_GROUP_ISO   = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['fl_relief','安全弁'],['fl_solenoid','電磁弁'],['fl_control','調節弁'],['strainer','ストレーナー'],['y_strainer','Y型ストレーナー'],['flex','フレキ']];
+var NFL_GROUP_ISO  = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁']];
+var FL_GROUP_PLAN  = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['strainer','ストレーナー'],['y_strainer','Y型ストレーナー'],['flex','フレキ']];
+var NFL_GROUP_PLAN = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁']];
+// 継手（フランジ・ユニオン〜プラグ）：旧フランジ付き／フランジ無グループから独立させた大項目「継手」用
+var FIT_GROUP_ISO  = [['flange','フランジ'],['rc','RC'],['re_short','RE'],['union_new','ユニオン'],['union','六角ニップル'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ']];
+var FIT_GROUP_PLAN = [['flange','フランジ'],['rc','RC'],['re_short','RE'],['union_new','ユニオン'],['union','六角ニップル'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ']];
 
 // 後方互換
 var FL_GROUP = FL_GROUP_ISO;
@@ -1441,8 +1474,7 @@ function toggleSection(key){
 }
 function initCollapsedSections(){
   var st = loadCollapsedSections();
-  // 'iso'と'plan'は大枠の折りたたみを廃止したため対象外（常に表示）
-  ['weld','isoFl','isoNfl','isoAsm','planFl','planNfl','planAsm'].forEach(function(key){ applySectionState(key, !!st[key]); });
+  ['weld','basicOps','pipeOps','stamp','iso','plan','isoFl','isoNfl','isoFit','isoAsm','planFl','planNfl','planFit','planAsm'].forEach(function(key){ applySectionState(key, !!st[key]); });
 }
 
 
@@ -1470,9 +1502,10 @@ function placeHeaderAssembly(isPlan, c){
   var b2top  = {x:b2base.x+stemLen*bx, y:b2base.y+stemLen*by};
   var fitAngle = ((headerAngDeg % 360) + 360) % 360;
 
-  var pipeMain = {kind:'pipe', pt:S.pt, wx1:left.x, wy1:left.y, wx2:right.x, wy2:right.y};
-  var pipeB1 = {kind:'pipe', pt:S.pt, wx1:b1base.x, wy1:b1base.y, wx2:b1top.x, wy2:b1top.y};
-  var pipeB2 = {kind:'pipe', pt:S.pt, wx1:b2base.x, wy1:b2base.y, wx2:b2top.x, wy2:b2top.y};
+  // ヘッダー組立品の配管には寸法表示は不要なため、あらかじめ寸法文字を空欄にしておく（空欄＝寸法非表示）
+  var pipeMain = {kind:'pipe', pt:S.pt, wx1:left.x, wy1:left.y, wx2:right.x, wy2:right.y, dimText:''};
+  var pipeB1 = {kind:'pipe', pt:S.pt, wx1:b1base.x, wy1:b1base.y, wx2:b1top.x, wy2:b1top.y, dimText:''};
+  var pipeB2 = {kind:'pipe', pt:S.pt, wx1:b2base.x, wy1:b2base.y, wx2:b2top.x, wy2:b2top.y, dimText:''};
   var fitLeft = {kind:'fitting', ft:'gate', pt:S.pt, wx:left.x, wy:left.y, angle:fitAngle, mirror:false, plan:isPlan};
   var fitRight = {kind:'fitting', ft:'gate', pt:S.pt, wx:right.x, wy:right.y, angle:fitAngle, mirror:false, plan:isPlan};
   var gaugeB1 = {kind:'fitting', ft:'gauge', pt:S.pt, wx:b1top.x, wy:b1top.y, angle:0, mirror:false, plan:isPlan};
@@ -1487,6 +1520,14 @@ function placeHeaderAssembly(isPlan, c){
   updateMultiSelPanel();
   updateMirrorButton();
 
+  // ヘッダーは同じ画面に何個も連続で置くことがほとんど無いため、設置後はツールを「配管」（ニュートラル状態）に自動で戻す
+  // ※選択（回転・鏡像用のハイライトと編集パネル）はそのまま維持されるので、続けて回転・鏡像・位置調整は可能
+  S.tool = 'pipe';
+  ['bPipe','bDim','bTxt','bErs','bSel'].forEach(function(id){document.getElementById(id).classList.remove('on');});
+  document.getElementById('bPipe').classList.add('on');
+  closeDrawer();
+  updateSt();
+
   showToast('ヘッダーを設置しました（🔄回転・⇌鏡像がそのまま使えます。長押しで位置調整・伸縮も可能）');
   render();
 }
@@ -1496,6 +1537,8 @@ function buildFitGrids(){
   var nflEl  = document.getElementById('nflGrid');
   var flPlEl = document.getElementById('flGridPlan');
   var nflPlEl= document.getElementById('nflGridPlan');
+  var fitEl  = document.getElementById('fitGridIso');
+  var fitPlEl= document.getElementById('fitGridPlan');
   var weldEl = document.getElementById('weldGrid');
   flEl.innerHTML = FL_GROUP_ISO.map(function(p){
     return '<button class="fi" onclick="setFT(\''+p[0]+'\')">'+svgIcon(p[0],true)+'<span>'+p[1]+'</span></button>';
@@ -1507,6 +1550,12 @@ function buildFitGrids(){
     return '<button class="fi" onclick="setFT(\''+p[0]+'\',true)">'+svgIcon(p[0],false)+'<span>'+p[1]+'</span></button>';
   }).join('');
   if(nflPlEl) nflPlEl.innerHTML = NFL_GROUP_PLAN.map(function(p){
+    return '<button class="fi" onclick="setFT(\''+p[0]+'\',true)">'+svgIcon(p[0],false)+'<span>'+p[1]+'</span></button>';
+  }).join('');
+  if(fitEl) fitEl.innerHTML = FIT_GROUP_ISO.map(function(p){
+    return '<button class="fi" onclick="setFT(\''+p[0]+'\')">'+svgIcon(p[0],true)+'<span>'+p[1]+'</span></button>';
+  }).join('');
+  if(fitPlEl) fitPlEl.innerHTML = FIT_GROUP_PLAN.map(function(p){
     return '<button class="fi" onclick="setFT(\''+p[0]+'\',true)">'+svgIcon(p[0],false)+'<span>'+p[1]+'</span></button>';
   }).join('');
   weldEl.innerHTML = WELD_GROUP.map(function(p){
@@ -2676,7 +2725,7 @@ function movePress(pos){
       // 固定モードではなく、指の「今の位置」が端に近いか中央寄りかを毎回判定する
       var pEp1=w2s(S.dragEl.wx1,S.dragEl.wy1), pEp2=w2s(S.dragEl.wx2,S.dragEl.wy2);
       var dEp0=dist2(pos.x,pos.y,pEp1.x,pEp1.y), dEp1=dist2(pos.x,pos.y,pEp2.x,pEp2.y);
-      var END_ZONE_PX=20;
+      var END_ZONE_PX=12;
       if(dEp0<END_ZONE_PX || dEp1<END_ZONE_PX){
         // 伸縮：近い方の端点だけを動かす（グリッドスナップ）
         S.dragSubMode='stretch';
@@ -2767,7 +2816,7 @@ function endPress(pos){
       }
       if(totalLen >= GRID_M*0.5){
         saveH();
-        S.els.push({kind:'hose', pts:S.hosePts, pt:S.pt});
+        S.els.push({kind:'hose', pts:S.hosePts, pt:S.pt, color:S.drawColor||undefined, sz:S.drawThickness||undefined});
       }
     }
     S.hosePts=null;
@@ -2815,7 +2864,7 @@ function endPress(pos){
       var dx=we.x-S.drawStart.x,dy=we.y-S.drawStart.y;
       if(Math.sqrt(dx*dx+dy*dy)>=GRID_M*0.5){
         saveH();
-        S.els.push({kind:'pipe',pt:S.pt,wx1:S.drawStart.x,wy1:S.drawStart.y,wx2:we.x,wy2:we.y});
+        S.els.push({kind:'pipe',pt:S.pt,wx1:S.drawStart.x,wy1:S.drawStart.y,wx2:we.x,wy2:we.y,color:S.drawColor||undefined,sz:S.drawThickness||undefined});
       }
     }
     S.snapPt=null; render(); return;
@@ -3069,13 +3118,13 @@ function handleDown(pos){
       var dxB=pe.wx2-fp.x, dyB=pe.wy2-fp.y;
       var lenA=Math.sqrt(dxA*dxA+dyA*dyA), lenB=Math.sqrt(dxB*dxB+dyB*dyB);
       if(lenA >= GRID_M*0.3 && lenB >= GRID_M*0.3){
-        var partB = {kind:'pipe', pt:pe.pt, status:pe.status, wx1:fp.x, wy1:fp.y, wx2:pe.wx2, wy2:pe.wy2};
+        var partB = {kind:'pipe', pt:pe.pt, status:pe.status, wx1:fp.x, wy1:fp.y, wx2:pe.wx2, wy2:pe.wy2, color:pe.color, sz:pe.sz};
         pe.wx2 = fp.x; pe.wy2 = fp.y;
         delete pe.dimText; // 寸法カスタム文字は分割後に不整合になるためリセット
         S.els.push(partB);
       }
     }
-    var newFit={kind:'fitting',ft:S.ft,pt:S.pt,wx:fp.x,wy:fp.y,angle:placeAngle,mirror:false,plan:isPlanFit};
+    var newFit={kind:'fitting',ft:S.ft,pt:S.pt,wx:fp.x,wy:fp.y,angle:placeAngle,mirror:false,plan:isPlanFit,color:S.drawColor||undefined};
     S.els.push(newFit);
     S.sel=newFit;
     S.lastFit=newFit;
@@ -3127,27 +3176,25 @@ function handleDown(pos){
     return;
   }
   if(S.tool==='split'){
-    var hsp = hitTest(pos.x,pos.y);
-    if(hsp && hsp.el.kind==='pipe'){
-      var pe = hsp.el;
-      var splitPt = nearestPointOnPipeForEl(pos.x,pos.y,pe);
-      if(splitPt){
-        var dxA=splitPt.x-pe.wx1, dyA=splitPt.y-pe.wy1;
-        var dxB=pe.wx2-splitPt.x, dyB=pe.wy2-splitPt.y;
-        var lenA=Math.sqrt(dxA*dxA+dyA*dyA), lenB=Math.sqrt(dxB*dxB+dyB*dyB);
-        if(lenA < GRID_M*0.3 || lenB < GRID_M*0.3){
-          showToast('端点に近すぎます。中ほどをタップしてください');
-          return;
-        }
-        saveH();
-        var partB = {kind:'pipe', pt:pe.pt, status:pe.status, wx1:splitPt.x, wy1:splitPt.y, wx2:pe.wx2, wy2:pe.wy2};
-        pe.wx2 = splitPt.x; pe.wy2 = splitPt.y;
-        delete pe.dimText; // 寸法カスタム文字は分割後に不整合になるためリセット
-        S.els.push(partB);
-        showSplitMarker(splitPt.x, splitPt.y);
-        showToast('配管を2本に分割しました');
-        render();
+    var spNear = nearestPointOnPipe(pos.x,pos.y); // 継手が上に重なっていても、直下の配管を検出する
+    if(spNear){
+      var pe = spNear.el;
+      var splitPt = {x:spNear.x, y:spNear.y};
+      var dxA=splitPt.x-pe.wx1, dyA=splitPt.y-pe.wy1;
+      var dxB=pe.wx2-splitPt.x, dyB=pe.wy2-splitPt.y;
+      var lenA=Math.sqrt(dxA*dxA+dyA*dyA), lenB=Math.sqrt(dxB*dxB+dyB*dyB);
+      if(lenA < GRID_M*0.3 || lenB < GRID_M*0.3){
+        showToast('端点に近すぎます。中ほどをタップしてください');
+        return;
       }
+      saveH();
+      var partB = {kind:'pipe', pt:pe.pt, status:pe.status, wx1:splitPt.x, wy1:splitPt.y, wx2:pe.wx2, wy2:pe.wy2, color:pe.color, sz:pe.sz};
+      pe.wx2 = splitPt.x; pe.wy2 = splitPt.y;
+      delete pe.dimText; // 寸法カスタム文字は分割後に不整合になるためリセット
+      S.els.push(partB);
+      showSplitMarker(splitPt.x, splitPt.y);
+      showToast('配管を2本に分割しました');
+      render();
     } else {
       showToast('配管をタップしてください');
     }
@@ -3198,23 +3245,24 @@ function handleDown(pos){
   }
   if(S.tool==='trim' || S.tool==='extend'){
     var trimModeLabel = (S.tool==='trim') ? 'トリム' : '延長';
-    var ht = hitTest(pos.x,pos.y);
-    if(!ht || ht.el.kind!=='pipe'){
+    var htNear = nearestPointOnPipe(pos.x,pos.y); // 継手が上に重なっていても、直下の配管を検出する
+    if(!htNear){
       showToast(S.trimBoundary ? (trimModeLabel+'したい配管をタップしてください') : '基準になる配管をタップしてください');
       return;
     }
+    var htEl = htNear.el;
     if(!S.trimBoundary){
-      S.trimBoundary = ht.el;
-      S.sel = ht.el;
+      S.trimBoundary = htEl;
+      S.sel = htEl;
       showToast('基準配管を選択しました。次に'+trimModeLabel+'したい配管をタップしてください');
       render();
       return;
     }
-    if(ht.el === S.trimBoundary){
+    if(htEl === S.trimBoundary){
       showToast('基準配管と同じ配管です。別の配管をタップしてください');
       return;
     }
-    var trimMsg = trimExtendPipe(ht.el, S.trimBoundary, s2w(pos.x,pos.y), S.tool);
+    var trimMsg = trimExtendPipe(htEl, S.trimBoundary, s2w(pos.x,pos.y), S.tool);
     if(trimMsg==='ok'){
       showToast(trimModeLabel+'しました。続けて他の配管もタップできます');
     } else if(trimMsg==='parallel'){
@@ -3256,6 +3304,90 @@ function zoomAt(f,cx,cy){
   S.px=cx-fc*(cx-S.px);S.py=cy-fc*(cy-S.py);S.zoom=nz;render();
 }
 function toggleGrid(){S.showGrid=!S.showGrid;render();}
+// 既定の描画色・太さ：ここで選んだ色/太さが、次に新規で描く配管・継手・ホースに自動で適用される。次回開いた時も覚えている。
+// あわせて、その時点で何か選択中（タップ選択／長押し中／範囲選択中）の要素があれば、その場でも色・太さを変更する。
+// → 「描く前に既定値を決める」「描いた後に選んで変える」の両方をこの一つのパネルで行える。
+var DRAWSTYLE_STORAGE_KEY = 'pipeiso_draw_style';
+function saveDrawStyle(){
+  try{ localStorage.setItem(DRAWSTYLE_STORAGE_KEY, JSON.stringify({color:S.drawColor||null, thickness:S.drawThickness||null})); }catch(e){}
+}
+// 現在「選択中」とみなせる要素（範囲選択中の複数 / 長押し移動中の1つ / タップ選択中の1つ）に
+// 色・太さを適用する。対象が無ければ何もせずfalseを返す（＝既定値の変更のみ行われる）。
+function applyDrawStyleToSelection(opts){
+  var targets = null;
+  if(S.multiSel && S.multiSel.length){ targets = S.multiSel; }
+  else if(S.dragEl){ targets = [S.dragEl]; }
+  else if(S.sel){ targets = [S.sel]; }
+  if(!targets || !targets.length) return false;
+  saveH();
+  targets.forEach(function(e){
+    if(opts.hasOwnProperty('color')){
+      if(opts.color){ e.color = opts.color; } else { delete e.color; }
+    }
+    if(opts.hasOwnProperty('thickness') && opts.thickness && (e.kind==='pipe' || e.kind==='hose')){
+      e.sz = opts.thickness;
+    }
+  });
+  render();
+  return true;
+}
+function setDrawColor(hex){
+  S.drawColor = hex || null;
+  saveDrawStyle();
+  var applied = applyDrawStyleToSelection({color:hex});
+  updateDrawStyleUI();
+  if(applied){
+    showToast(hex ? '選択中の要素と、これから描く既定色を変更しました' : '選択中の要素と既定色を黒に戻しました');
+  } else {
+    showToast(hex ? '既定の描画色を変更しました' : '描画色を既定（黒）に戻しました');
+  }
+}
+function setDrawThickness(val){
+  S.drawThickness = val || null;
+  saveDrawStyle();
+  var applied = applyDrawStyleToSelection({thickness:val});
+  updateDrawStyleUI();
+  showToast(applied ? '選択中の配管と、これから描く既定の太さを変更しました' : '既定の太さを変更しました');
+}
+function buildDrawStyleUI(){
+  var colorHost = document.getElementById('drawColorSwatches');
+  if(colorHost && !colorHost.childNodes.length){
+    var html = MULTISEL_COLORS.map(function(c){
+      return '<button class="rot-btn" data-drawcolor="'+c+'" style="background:'+c+';min-height:28px;" onclick="setDrawColor(\''+c+'\')"></button>';
+    }).join('');
+    colorHost.innerHTML = html;
+  }
+  var thickHost = document.getElementById('drawThicknessBtns');
+  if(thickHost && !thickHost.childNodes.length){
+    thickHost.innerHTML = PIPE_THICKNESS.map(function(t){
+      return '<button class="rot-btn" data-drawthick="'+t.val+'" onclick="setDrawThickness('+t.val+')">'+t.label+'</button>';
+    }).join('');
+  }
+  updateDrawStyleUI();
+}
+function updateDrawStyleUI(){
+  var colorHost = document.getElementById('drawColorSwatches');
+  if(colorHost){
+    [].forEach.call(colorHost.querySelectorAll('[data-drawcolor]'), function(b){
+      var v = b.getAttribute('data-drawcolor');
+      b.classList.toggle('on', (v==='' && !S.drawColor) || (v && v===S.drawColor));
+    });
+  }
+  var thickHost = document.getElementById('drawThicknessBtns');
+  if(thickHost){
+    [].forEach.call(thickHost.querySelectorAll('[data-drawthick]'), function(b){
+      b.classList.toggle('on', S.drawThickness ? (parseFloat(b.getAttribute('data-drawthick'))===S.drawThickness) : b.textContent==='中');
+    });
+  }
+}
+function initDrawStyle(){
+  try{
+    var v = JSON.parse(localStorage.getItem(DRAWSTYLE_STORAGE_KEY) || 'null');
+    S.drawColor = (v && v.color) || null;
+    S.drawThickness = (v && v.thickness) || null;
+  }catch(e){ S.drawColor = null; S.drawThickness = null; }
+  buildDrawStyleUI();
+}
 function currentMirrorTarget(){
   if(S.dragEl && S.dragEl.kind==='fitting') return S.dragEl;
   if(S.sel && S.sel.kind==='fitting') return S.sel;
@@ -3494,7 +3626,6 @@ function buildPipeEditPanel(isPipe, isHose, isFitting, el){
     MULTISEL_COLORS.forEach(function(c){
       html += '<button class="rot-btn" style="background:'+c+';min-height:28px;" onclick="applyColorForTarget(\''+c+'\')"></button>';
     });
-    html += '<button class="rot-btn" onclick="applyColorForTarget(null)">既定色</button>';
     colorHost.innerHTML = html;
   }
 
@@ -3578,7 +3709,6 @@ function buildColorSwatches(){
   MULTISEL_COLORS.forEach(function(c){
     html += '<button class="rot-btn" style="background:'+c+';min-height:28px;" onclick="applyMultiSelColor(\''+c+'\')"></button>';
   });
-  html += '<button class="rot-btn" onclick="applyMultiSelColor(null)">既定色</button>';
   host.innerHTML = html;
   var thickHost=document.getElementById('multiSelThicknessBtns');
   if(thickHost && !thickHost.childNodes.length){
@@ -3763,14 +3893,18 @@ function setTool(t){
   if(keepDrawerOpen.indexOf(t)===-1) closeDrawer();
   updateSt(); updateMirrorButton(); updateMultiSelPanel(); updatePipeEditPanel();
 }
+// ☰メニューはドロワー（基本操作／継手／ヘッダー等）の開閉だけを行い、ツールは切り替えない。
+// ※以前はここで強制的にツールを『継手』へ切り替えていたため、色・太さを選んだだけのつもりでも
+//   配管ツールから外れてしまい、その後キャンバスをタップすると継手用の「配管の上をタップしてください」
+//   という表示が出てしまっていた。ツールの切り替えは、ドロワー内で継手やヘッダー等を実際に選んだ時
+//   （setFT/setTool等）にだけ行われるようにする。
 function setToolFitting(){
   var d=document.getElementById('drawer');
   if(d.classList.contains('open')){
     closeDrawer();
-    return;
+  } else {
+    d.classList.add('open');
   }
-  setTool('fitting');
-  d.classList.add('open');
 }
 
 // ── ESCボタン：進行中の操作をすべて中断し、ニュートラルな状態（配管ツール）に戻す ──
@@ -4561,6 +4695,7 @@ function initApp(){
   resize();
   buildFitGrids();
   initCollapsedSections();
+  initDrawStyle();
   document.getElementById('bDimToggle').classList.add('on');
   S.px=canvas.width/2 - 2*PX_PER_M;
   S.py=canvas.height/2;
