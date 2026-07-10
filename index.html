@@ -52,13 +52,13 @@ header{
 .drawer{
   position:absolute;right:0;top:0;bottom:0;width:112px;
   background:#ffffff;border-left:1px solid #d8dce3;
-  display:flex;flex-direction:column;overflow-y:auto;
   transform:translateX(100%);transition:transform 0.22s ease;z-index:50;
 }
 .drawer.open{transform:none;}
-.dc{position:absolute;top:8px;right:8px;background:#eef1f6;border:1px solid #d8dce3;
-  color:#1a1d27;width:26px;height:26px;border-radius:6px;cursor:pointer;
-  font-size:15px;display:flex;align-items:center;justify-content:center;}
+.drawer-scroll{
+  position:absolute;left:0;right:0;top:0;bottom:0;
+  display:flex;flex-direction:column;overflow-y:auto;
+}
 .dsec{padding:6px 6px 4px;}
 .dlabel{font-size:8px;font-weight:700;letter-spacing:0.5px;color:#5c6b8a;text-transform:uppercase;margin-bottom:4px;}
 .dsec-toggle{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;}
@@ -91,7 +91,7 @@ header{
 .dot{width:7px;height:7px;border-radius:50%;margin:0 auto 3px;}
 .div{height:1px;background:#d8dce3;margin:4px 9px;}
 /* OVERLAY */
-.ovl{position:absolute;bottom:10px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:20;}
+.ovl{position:absolute;bottom:10px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:60;}
 .ov{
   width:38px;height:38px;border-radius:9px;background:#ffffff;border:1px solid #d8dce3;
   color:#1a1d27;font-size:19px;display:flex;align-items:center;justify-content:center;
@@ -131,6 +131,14 @@ header{
   max-height:calc(100% - 150px);overflow-y:auto;
 }
 .pipe-edit-panel.vis{display:block;}
+/* 背景PDF（下敷き）の透明度・サイズ調整パネル：左上、ステータス表示の下に配置 */
+.bg-panel{
+  position:absolute;top:48px;left:8px;width:118px;
+  background:#ffffff;border:1px solid #0277bd;border-radius:10px;
+  padding:8px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.18);
+}
+.bg-panel.vis{display:block;}
+.bg-panel input[type=range]{width:100%;}
 /* STATUS */
 .status{
   position:absolute;top:46px;left:8px;
@@ -142,7 +150,7 @@ header{
 .esc-btn{
   position:absolute;top:8px;left:8px;width:34px;height:34px;
   border-radius:8px;background:#ffffff;border:1.5px solid #d32f2f;
-  color:#d32f2f;font-size:13px;font-weight:700;
+  color:#d32f2f;font-size:10px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.12);
   z-index:30;-webkit-tap-highlight-color:transparent;
@@ -166,7 +174,7 @@ header{
   border:1px solid #d32f2f;color:#d32f2f;border-radius:6px;cursor:pointer;font-size:11px;text-align:center;}
 /* TOAST */
 .toast{
-  position:fixed;bottom:68px;left:50%;transform:translateX(-50%);
+  position:fixed;top:56px;left:50%;transform:translateX(-50%);
   background:#1a1d27;border:1px solid #2e3347;color:#f5f6f8;
   padding:5px 15px;border-radius:20px;font-size:11px;
   z-index:500;opacity:0;transition:opacity 0.3s;pointer-events:none;
@@ -215,6 +223,12 @@ header{
   background:#eef1f6;color:#1a1d27;font-size:14px;margin-bottom:8px;
 }
 .text-input-btns{display:flex;gap:6px;}
+.text-input-mode-toggle{display:flex;gap:6px;margin:4px 0 8px;}
+.mode-btn{
+  flex:1;padding:8px 4px;font-size:11px;border-radius:8px;
+  border:1.5px solid #d8dce3;background:#f5f7fa;color:#5c6b8a;cursor:pointer;
+}
+.mode-btn.active{border-color:#0277bd;background:#0277bd;color:#fff;font-weight:700;}
 .text-input-cancel,.text-input-ok{
   flex:1;padding:7px;border-radius:7px;border:none;font-size:12px;cursor:pointer;
 }
@@ -249,6 +263,7 @@ header{
    キャンバス（作図エリア）をできるだけ広く確保する */
 @media (orientation: landscape) and (max-height: 500px){
   header{height:34px;padding:0 8px;}
+  .toast{top:42px;}
   .logo{font-size:13px;}
   .logo small{display:none;} /* サブタイトルは省略してスペースを節約 */
   .h-btn{padding:3px 8px;font-size:10px;}
@@ -259,10 +274,24 @@ header{
   .ov{width:32px;height:32px;font-size:16px;}
 }
 
+/* 右クリックコンテキストメニュー（PC向け） */
+.ctx-menu{
+  position:absolute;display:none;min-width:140px;
+  background:#ffffff;border:1px solid #d8dce3;border-radius:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:200;padding:4px;
+}
+.ctx-item{
+  padding:8px 10px;border-radius:6px;font-size:12px;color:#1a1d27;
+  cursor:pointer;white-space:nowrap;
+}
+.ctx-item:hover{background:#eef1f6;}
+.ctx-item:active{background:#dde2ea;}
+.ctx-sep{height:1px;background:#d8dce3;margin:4px 2px;}
+
 /* PRINT */
 @media print{
   body{background:#fff;color:#000;}
-  header,.btbar,.ovl,.esc-btn,.drawer,.rot-panel,.multisel-panel,.pipe-edit-panel,.status,.toast,.pop,.text-input-overlay,.share-sheet-overlay,.stamp-overlay,.custom-manage-overlay{display:none!important;}
+  header,.btbar,.ovl,.esc-btn,.drawer,.rot-panel,.multisel-panel,.pipe-edit-panel,.status,.toast,.pop,.text-input-overlay,.share-sheet-overlay,.stamp-overlay,.custom-manage-overlay,.ctx-menu,.bg-panel{display:none!important;}
   .canvas-wrap{position:static;width:100%;height:100vh;}
 }
 </style>
@@ -282,18 +311,22 @@ header{
 <header>
   <div class="logo">PipeISO <small>配管アイソメ</small></div>
   <button class="h-btn" onclick="triggerLoadFile()">📂開く</button>
+  <button class="h-btn" onclick="triggerLoadPdf()">📄PDF/写真取込</button>
   <button class="h-btn" onclick="openShareSheet()">💾保存</button>
   <button class="h-btn" onclick="clearAll()">🗑全消去</button>
   <input type="file" id="loadFileInput" accept=".json,application/json,.pipeiso" style="display:none" onchange="handleLoadFile(event)">
+  <input type="file" id="loadPdfInput" accept="application/pdf,image/*" style="display:none" onchange="handleLoadPdf(event)">
 </header>
 
 <div class="body">
   <div class="canvas-wrap" id="wrap">
     <canvas id="c"></canvas>
-    <div class="esc-btn" onclick="escapeToNeutral()" title="操作を中断してニュートラルに戻る">⏹</div>
+    <div class="esc-btn" onclick="escapeToNeutral()" title="操作を中断してニュートラルに戻る">ESC</div>
     <div class="status" id="status">配管</div>
+    <div class="ctx-menu" id="ctxMenu"></div>
 
     <div class="ovl">
+      <div class="ov" id="bgToggleBtn" onclick="toggleBgPanel()" title="背景の濃さ・回転・位置を調整" style="display:none;">🌗</div>
       <div class="ov" onclick="setToolFitting()" title="メニューを開く">☰</div>
     </div>
 
@@ -306,20 +339,56 @@ header{
     </div>
 
     <div class="pipe-edit-panel" id="pipeEditPanel">
-      <div class="rot-title">配管編集中</div>
-      <div class="rot-btns" style="grid-template-columns:repeat(2,1fr);" id="pipeColorSwatches"></div>
+      <div class="rot-title" id="pipeEditTitle">配管編集中</div>
+      <div class="rot-btns" id="colorTargetTabs" style="grid-template-columns:repeat(2,1fr);margin-top:2px;display:none;">
+        <button class="rot-btn" id="tabPipeColorBtn" onclick="setColorEditTarget('pipe')">配管</button>
+        <button class="rot-btn" id="tabDimColorBtn" onclick="setColorEditTarget('dim')">寸法</button>
+      </div>
+      <div style="font-size:9px;color:#5c6b8a;text-align:center;" id="pipeColorLabel">配管の色</div>
+      <div class="rot-btns" style="grid-template-columns:repeat(2,1fr);margin-top:2px;" id="pipeColorSwatches"></div>
       <div class="rot-btns" style="grid-template-columns:repeat(1,1fr);margin-top:4px;" id="pipeThicknessBtns"></div>
+      <div style="font-size:9px;color:#5c6b8a;margin-top:6px;text-align:center;" id="pipeTextSizeLabel">寸法文字サイズ</div>
+      <div class="rot-btns" style="grid-template-columns:repeat(2,1fr);margin-top:2px;" id="pipeTextSizeBtns"></div>
+    </div>
+
+    <div class="bg-panel" id="bgPanel">
+      <div class="rot-title">背景（PDF/写真・下敷き）</div>
+      <div style="font-size:9px;color:#5c6b8a;">透明度</div>
+      <input type="range" id="bgOpacitySlider" min="10" max="100" value="45" oninput="setBgOpacity(this.value)">
+      <div style="font-size:9px;color:#5c6b8a;margin-top:4px;">サイズ</div>
+      <div class="rot-btns" style="grid-template-columns:repeat(3,1fr);">
+        <button class="rot-btn" onclick="scaleBg(0.9)">－</button>
+        <button class="rot-btn" onclick="resetBgScale()">既定</button>
+        <button class="rot-btn" onclick="scaleBg(1.1)">＋</button>
+      </div>
+      <div style="font-size:9px;color:#5c6b8a;margin-top:4px;">回転</div>
+      <div class="rot-btns" style="grid-template-columns:repeat(3,1fr);">
+        <button class="rot-btn" onclick="rotateBg(-90)">－90°</button>
+        <button class="rot-btn" onclick="rotateBg(-1)">－1°</button>
+        <button class="rot-btn" onclick="resetBgAngle()">既定</button>
+        <button class="rot-btn" onclick="rotateBg(1)">＋1°</button>
+        <button class="rot-btn" onclick="rotateBg(90)">＋90°</button>
+      </div>
+      <button class="rot-btn" style="width:100%;margin-top:6px;" onclick="setTool('movebg')">✋ 位置を調整</button>
+      <button class="rot-close" onclick="removeBg()">背景を削除</button>
+      <button class="rot-close" onclick="toggleBgPanel()" style="margin-top:4px;">✕ 閉じる</button>
     </div>
   </div>
 
   <div class="drawer" id="drawer">
-    <div class="dc" onclick="closeDrawer()">✕</div>
-    <div style="height:34px"></div>
+    <div class="drawer-scroll">
 
-    <!-- ■ 配管の分割 -->
+    <!-- ■ 配管の分割／結合 -->
     <div class="dsec">
       <div class="dlabel">配管操作</div>
-      <button class="di" style="width:100%;margin-top:4px;" onclick="setTool('split')">✂ 分割</button>
+      <div class="dg c2">
+        <button class="di" onclick="setTool('split')">✂<br>分割</button>
+        <button class="di" onclick="setTool('join')">🔗<br>結合</button>
+      </div>
+      <div class="dg c2" style="margin-top:6px;">
+        <button class="di" onclick="setTool('trim')">✂️<br>トリム</button>
+        <button class="di" onclick="setTool('extend')">📏<br>延長</button>
+      </div>
     </div>
     <div class="div"></div>
 
@@ -365,6 +434,14 @@ header{
       <div id="secIsoNfl">
         <div class="dsec"><div class="dg c1" id="nflGrid"></div></div>
       </div>
+      <div class="div"></div>
+      <div class="dsec dsec-toggle" onclick="toggleSection('isoAsm')">
+        <div class="dlabel">組立品 <span class="dcaret" id="caretIsoAsm">▾</span></div>
+      </div>
+      <div id="secIsoAsm">
+        <div class="dsec"><button class="di" style="width:100%;" onclick="setTool('headerIso')"><span style="font-size:22px;line-height:1;">⏲️</span><br>ヘッダー</button></div>
+        <div class="dsec"><button class="di" style="width:100%;" onclick="setTool('hose')"><span style="font-size:22px;line-height:1;">〰️</span><br>ホース</button></div>
+      </div>
     </div>
     <div class="div"></div>
 
@@ -386,6 +463,14 @@ header{
       <div id="secPlanNfl">
         <div class="dsec"><div class="dg c1" id="nflGridPlan"></div></div>
       </div>
+      <div class="div"></div>
+      <div class="dsec dsec-toggle" onclick="toggleSection('planAsm')">
+        <div class="dlabel">組立品 <span class="dcaret" id="caretPlanAsm">▾</span></div>
+      </div>
+      <div id="secPlanAsm">
+        <div class="dsec"><button class="di" style="width:100%;" onclick="setTool('headerPlan')"><span style="font-size:22px;line-height:1;">⏲️</span><br>ヘッダー</button></div>
+        <div class="dsec"><button class="di" style="width:100%;" onclick="setTool('hose')"><span style="font-size:22px;line-height:1;">〰️</span><br>ホース</button></div>
+      </div>
     </div>
     <div class="div"></div>
 
@@ -400,6 +485,7 @@ header{
       <button class="di" style="width:100%" onclick="setTool('northarrow')">🧭 プラントノース設置</button>
     </div>
     <div style="height:16px"></div>
+    </div>
   </div>
 </div>
 
@@ -408,11 +494,12 @@ header{
   <button class="bt"    id="bRot"  onclick="rotateStep()"><span class="ic">🔄</span>回転</button>
   <button class="bt"    id="bMir"  onclick="toggleMirror()"><span class="ic">⇌</span>鏡像</button>
   <button class="bt"    id="bDim"  onclick="setTool('dim')"><span class="ic">📏</span>寸法変更</button>
-  <button class="bt"    id="bSel"  onclick="setTool('rangesel')"><span class="ic">⬚</span>範囲選択</button>
+  <button class="bt"    id="bSel"  onclick="setTool('rangesel')"><span class="ic">⬚</span>選択</button>
   <button class="bt"    id="bScale" onclick="scaleAction()"><span class="ic">⤢</span>尺度変更</button>
   <button class="bt"    id="bTxt"  onclick="setTool('text')"><span class="ic">Ａ</span>文字</button>
   <button class="bt"    id="bErs"  onclick="eraseAction()"><span class="ic">✕</span>消去</button>
   <button class="bt"    id="bUndo" onclick="undoAct()"><span class="ic">↩</span>戻る</button>
+  <button class="bt"    id="bRedo" onclick="redoAct()"><span class="ic">↪</span>やり直し</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -421,6 +508,10 @@ header{
   <div class="text-input-box">
     <div class="text-input-title" id="textInputTitle">文字を入力</div>
     <input id="textInputField" type="text" inputmode="text" onkeydown="if(event.key==='Enter')confirmTextInput();">
+    <div class="text-input-mode-toggle" id="textInputModeToggle" style="display:none;">
+      <button type="button" class="mode-btn" id="modeBtnReal" onclick="setTextInputMode('real')">実寸を変更</button>
+      <button type="button" class="mode-btn" id="modeBtnDisplay" onclick="setTextInputMode('display')">表示のみ変更</button>
+    </div>
     <div class="text-input-btns">
       <button class="text-input-cancel" onclick="closeTextInput()">キャンセル</button>
       <button class="text-input-ok" onclick="confirmTextInput()">OK</button>
@@ -444,6 +535,12 @@ header{
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+</script>
 <script>
 // ── 定数 ──────────────────────────────────────
 var GRID_M       = 0.1;
@@ -527,7 +624,7 @@ var FL_TYPES = ['fl_gate','fl_globe','fl_ball','fl_butterfly','fl_check','flange
 var S = {
   tool:'pipe', pt:'CS', ft:'fl_gate', weldType:'weld_butt',
   showGrid:true, showDim:true, zoom:1, px:0, py:0,
-  els:[], sel:null, hist:[],
+  els:[], sel:null, hist:[], histRedo:[],
   drawing:false, drawStart:null, prev:null, snapPt:null,
   drawingLeader:false, leaderStart:null, leaderPrev:null,
   panning:false, panStart:null,
@@ -637,6 +734,7 @@ function snapIso(ssx,ssy,sex,sey){
   return {x:ws.x+sn*Math.cos(rad), y:ws.y+sn*Math.sin(rad)};
 }
 
+
 // ── SNAP TO ENDPOINTS ──────────────────────────
 function findSnap(sx,sy,exEl,exEnd){
   var best=null, bestD=SNAP_DIST_PX;
@@ -655,12 +753,26 @@ function findSnap(sx,sy,exEl,exEnd){
 // ── RENDER ─────────────────────────────────────
 function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(S.bg && S.bg.img){
+    var bgW = S.bg.baseW*S.bg.scale, bgH = S.bg.baseH*S.bg.scale;
+    var bgCenterScr = w2s(S.bg.wx, S.bg.wy);
+    var bgPxW = bgW*PX_PER_M*S.zoom, bgPxH = bgH*PX_PER_M*S.zoom;
+    ctx.save();
+    ctx.globalAlpha = S.bg.opacity;
+    ctx.translate(bgCenterScr.x, bgCenterScr.y);
+    ctx.rotate((S.bg.angle||0) * Math.PI/180);
+    ctx.drawImage(S.bg.img, -bgPxW/2, -bgPxH/2, bgPxW, bgPxH);
+    ctx.restore();
+  }
   if(S.showGrid) drawGrid();
   // 配管線を先に、継手・溶接記号・引出線・文字を後に描画する（S.els内の追加順に関係なく、
   // 継手が配管線に隠れて「貫通」して見えないようにするため2パスで描く）
-  S.els.forEach(function(e){ if(e.kind==='pipe') drawEl(e, e===S.sel||e===S.dragEl||S.multiSel.indexOf(e)>=0, false); });
-  S.els.forEach(function(e){ if(e.kind!=='pipe') drawEl(e, e===S.sel||e===S.dragEl||S.multiSel.indexOf(e)>=0, false); });
+  S.els.forEach(function(e){ if(e.kind==='pipe'||e.kind==='hose') drawEl(e, e===S.sel||e===S.dragEl||S.multiSel.indexOf(e)>=0, false); });
+  S.els.forEach(function(e){ if(e.kind!=='pipe'&&e.kind!=='hose') drawEl(e, e===S.sel||e===S.dragEl||S.multiSel.indexOf(e)>=0, false); });
   if(S.prev) drawEl(S.prev, false, true);
+  if(S.hoseDrawing && S.hosePts && S.hosePts.length>=2){
+    drawEl({kind:'hose', pts:S.hosePts}, false, true);
+  }
   if(S.leaderPrev){
     drawLeaderLine(S.leaderPrev.wx1, S.leaderPrev.wy1, S.leaderPrev.wx2, S.leaderPrev.wy2, true);
   }
@@ -718,13 +830,39 @@ function drawGrid(){
 
 function lw(sz){ return (sz||2)*S.zoom; }
 
+// ホース（フリーライン）：指でなぞった軌跡をそのまま線としてつなげて描画する
+function drawHose(el, sel){
+  if(!el.pts || el.pts.length<2) return;
+  var col = el.color||PIPE_COLOR;
+  ctx.strokeStyle = col;
+  ctx.lineWidth = lw(el.sz);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  var p0 = w2s(el.pts[0].x, el.pts[0].y);
+  ctx.moveTo(p0.x, p0.y);
+  for(var i=1;i<el.pts.length;i++){
+    var p = w2s(el.pts[i].x, el.pts[i].y);
+    ctx.lineTo(p.x, p.y);
+  }
+  ctx.stroke();
+  if(sel){
+    ctx.strokeStyle='#0277bd'; ctx.lineWidth=1.2;
+    [el.pts[0], el.pts[el.pts.length-1]].forEach(function(wp){
+      var sp=w2s(wp.x,wp.y);
+      ctx.beginPath(); ctx.arc(sp.x,sp.y,4,0,Math.PI*2); ctx.stroke();
+    });
+  }
+}
+
 function drawEl(el,sel,ghost){
   ctx.save(); ctx.globalAlpha=ghost?0.42:1;
   if(el.kind==='pipe'){
     var p1=w2s(el.wx1,el.wy1), p2=w2s(el.wx2,el.wy2);
     var col=el.color||PIPE_COLOR;
     var isExisting = el.status==='existing';
-    ctx.strokeStyle = sel ? '#d32f2f' : (isExisting ? '#9e9e9e' : col);
+    // 色を明示的に指定した場合は、選択中でもその色がそのまま見えるようにする
+    // （選択中は赤、というのは色を指定していない場合のみの目印として使う）
+    ctx.strokeStyle = el.color ? el.color : (sel ? '#d32f2f' : (isExisting ? '#9e9e9e' : PIPE_COLOR));
     ctx.lineWidth=lw(el.sz); ctx.lineCap='round';
     if(isExisting){ ctx.setLineDash([7*S.zoom, 5*S.zoom]); }
     ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
@@ -736,6 +874,8 @@ function drawEl(el,sel,ghost){
     }
   } else if(el.kind==='fitting'){
     drawFit(el,sel);
+  } else if(el.kind==='hose'){
+    drawHose(el,sel);
   } else if(el.kind==='weld'){
     drawWeld(el,sel);
   } else if(el.kind==='leader'){
@@ -745,12 +885,12 @@ function drawEl(el,sel,ghost){
   } else if(el.kind==='text'){
     var sp=w2s(el.wx,el.wy);
     ctx.font='bold '+(12*S.zoom*(el.scale||1))+'px sans-serif';
-    ctx.fillStyle=sel?'#b71c1c':(el.color||'#d32f2f');
+    ctx.fillStyle=el.color||'#d32f2f';
     ctx.textAlign='left'; ctx.fillText(el.text,sp.x,sp.y);
     if(sel){
       var m=ctx.measureText(el.text);
       ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
-      ctx.strokeRect(sp.x-2,sp.y-13*S.zoom,m.width+4,15*S.zoom); ctx.setLineDash([]);
+      ctx.strokeRect(sp.x-2,sp.y-13*S.zoom*(el.scale||1),m.width+4,15*S.zoom*(el.scale||1)); ctx.setLineDash([]);
     }
   }
   ctx.restore();
@@ -765,10 +905,31 @@ function drawDimOnLine(el,col,ghost,sel){
   if(disp === '') return; // 意図的に空欄にした場合は、背景の白帯も含め何も描画しない
   var p1=w2s(el.wx1,el.wy1), p2=w2s(el.wx2,el.wy2);
   var mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+  var fs=Math.max(9, Math.min(13, 10*S.zoom));
+
+  if(ghost){
+    // ゴースト時（配管を引いている最中）は、右手／左手どちらで操作していても指に隠れないよう、
+    // 配管の向きに関係なく常に画面の「上側」に水平な文字で表示する
+    fs = fs*1.8;
+    var offsetY = lw()/2 + fs + 8;
+    ctx.save();
+    ctx.font=fs+'px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    var tw2=ctx.measureText(disp).width;
+    var ly = my - offsetY;
+    ctx.fillStyle='rgba(255,255,255,0.85)';
+    ctx.fillRect(mx-tw2/2-3, ly-fs/2-1, tw2+6, fs+2);
+    ctx.fillStyle='rgba(2,119,189,0.95)';
+    ctx.globalAlpha = 1;
+    ctx.fillText(disp, mx, ly);
+    ctx.restore();
+    return;
+  }
+
   var ang=Math.atan2(p2.y-p1.y, p2.x-p1.x);
   var dispAng=ang;
   if(dispAng>Math.PI/2||dispAng<-Math.PI/2) dispAng+=Math.PI;
-  var fs=Math.max(9, Math.min(13, 10*S.zoom));
+  fs = fs * (el.dimScale||1); // 選択して個別に変更した文字サイズを反映
   var offset = lw()/2 + fs + 3;
   ctx.save();
   ctx.translate(mx, my);
@@ -778,8 +939,8 @@ function drawDimOnLine(el,col,ghost,sel){
   var tw=ctx.measureText(disp).width;
   ctx.fillStyle='rgba(255,255,255,0.85)';
   ctx.fillRect(-tw/2-3, -offset-fs/2-1, tw+6, fs+2);
-  ctx.fillStyle= ghost?'rgba(2,119,189,0.8)':(sel?'#d32f2f':col);
-  ctx.globalAlpha *= 0.9;
+  ctx.fillStyle= el.dimColor||PIPE_COLOR; // 寸法文字の色は配管の線色から独立させる（線の色を変えても文字色は変わらない）
+  ctx.globalAlpha = ctx.globalAlpha*0.9;
   ctx.fillText(disp, 0, -offset);
   ctx.restore();
 }
@@ -788,7 +949,7 @@ function drawDimOnLine(el,col,ghost,sel){
 function drawFit(el, sel){
   var sp   = w2s(el.wx, el.wy);
   var isPlan = !!el.plan; // 平面図用（傾きなし）で設置された継手か
-  var drawColor = sel ? '#d32f2f' : (el.color||PIPE_COLOR); // 選択中／直前に設置したものは赤で統一
+  var drawColor = el.color ? el.color : (sel ? '#d32f2f' : PIPE_COLOR); // 色指定時は選択中でもその色を表示。未指定の間だけ選択中／直前設置を赤で示す
   var ang  = ((el.angle || 0) * Math.PI / 180);
   var tiltDeg = isPlan ? 0 : 30; // 平面図用は記号自体の傾きを付けない
   var r    = 18 * S.zoom * (el.scale||1);   // 記号の半径（尺度変更に対応）
@@ -807,6 +968,15 @@ function drawFit(el, sel){
   // 弁・継手の共通描画（drawColorをそのまま渡し、直前に設置／選択中は全種類共通で赤くなるようにする）
   if(baseType === 'flange'){
     drawFlange(r, drawColor, lwd, tiltDeg);
+  } else if(baseType === 'boss'){
+    // ボス：単一の記号を回転させるのではなく、線を組み合わせて作る（drawBoss内で詳細説明）
+    drawBoss(r, drawColor, lwd, isPlan ? 0 : ang);
+  } else if(baseType === 'strainer'){
+    drawStrainer(r, drawColor, lwd, isPlan ? 0 : ang, isPlan);
+  } else if(baseType === 'y_strainer'){
+    drawYStrainer(r, drawColor, lwd, isPlan ? 0 : ang, isPlan);
+  } else if(baseType === 'flex'){
+    drawFlex(r, drawColor, lwd, isPlan ? 0 : ang, isPlan);
   } else if(baseType === 'gate'){
     drawValveBody(r, drawColor, lwd, hasFl, tiltDeg);
     drawGateMark(r, lwd, drawColor);
@@ -848,13 +1018,21 @@ function drawFit(el, sel){
     drawSimpleMark(el.ft, r, drawColor, lwd, tiltDeg);
   }
 
+  if(sel){
+    // 色を明示的に指定していて記号自体が赤くならない場合でも、選択中だとわかるように
+    // 点線の丸を表示する（文字・引出線・プラントノースと同じ選択インジケータの考え方）
+    ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.arc(0,0,r+7,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
   ctx.restore();
 }
 
 // ── 溶接記号：配管線上に点として描画 ───────────────
 function drawWeld(el, sel){
   var sp = w2s(el.wx, el.wy);
-  var col = sel ? '#d32f2f' : (el.color||'#1a1d27');
+  var col = el.color ? el.color : (sel ? '#d32f2f' : '#1a1d27');
   var ang = ((el.pipeAngle||0) * Math.PI / 180);
   var wsc = el.scale||1;
   ctx.save();
@@ -874,6 +1052,11 @@ function drawWeld(el, sel){
     ctx.moveTo(0, -6*S.zoom*wsc);
     ctx.lineTo(0,  6*S.zoom*wsc);
     ctx.stroke();
+  }
+  if(sel){
+    ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.arc(0,0,8*S.zoom*wsc,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
   }
   ctx.restore();
 }
@@ -901,8 +1084,8 @@ function drawLeader(el, sel, ghost){
   drawLeaderLine(el.wx1, el.wy1, el.wx2, el.wy2, false, el.color);
   var p2 = w2s(el.wx2, el.wy2);
   ctx.save();
-  ctx.font = 'bold '+(12*S.zoom)+'px sans-serif';
-  ctx.fillStyle = sel ? '#d32f2f' : (el.color||'#1a1d27');
+  ctx.font = 'bold '+(12*S.zoom*(el.scale||1))+'px sans-serif';
+  ctx.fillStyle = el.color||'#1a1d27';
   // 線の向きに応じてテキストを左右どちらに置くか決める
   var goingRight = el.wx2 >= el.wx1;
   ctx.textAlign = goingRight ? 'left' : 'right';
@@ -912,7 +1095,7 @@ function drawLeader(el, sel, ghost){
     var m = ctx.measureText(el.text);
     var boxX = goingRight ? p2.x+2 : p2.x-2-m.width;
     ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
-    ctx.strokeRect(boxX, p2.y-13*S.zoom, m.width+4, 15*S.zoom);
+    ctx.strokeRect(boxX, p2.y-13*S.zoom*(el.scale||1), m.width+4, 15*S.zoom*(el.scale||1));
     ctx.setLineDash([]);
   }
   ctx.restore();
@@ -922,7 +1105,7 @@ function fitLabel(ft){
   var m={
     flange:'FL', fl_gate:'GV(FL)', fl_globe:'GLV(FL)', fl_ball:'BV(FL)', fl_butterfly:'BFV(FL)', fl_check:'CV(FL)', fl_relief:'RV(FL)', fl_solenoid:'SV(FL)', fl_control:'CTV(FL)', fl_handle:'HW(FL)',
     gate:'GV', globe:'GLV', ball:'BV', butterfly:'BFV', check:'CV', union:'UN', rc:'RC', re:'RE(長基準)', re_short:'RE',
-    cap:'キャップ', fullcoupling:'フルカップリング', plug:'プラグ'
+    cap:'キャップ', boss:'ボス', fullcoupling:'フルカップリング', plug:'プラグ', strainer:'ストレーナー', y_strainer:'Y型ストレーナー', flex:'フレキ'
   };
   return m[ft]||ft;
 }
@@ -973,6 +1156,115 @@ function svgIcon(ft, isIso){
     body = '<rect x="'+(-r*0.95)+'" y="'+(-r*0.85)+'" width="'+(r*1.9)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
            '<line x1="'+fLtx+'" y1="'+fLty+'" x2="'+fLbx+'" y2="'+fLby+'" stroke="'+col+'" stroke-width="2.2"/>'+
            '<line x1="'+fRtx+'" y1="'+fRty+'" x2="'+fRbx+'" y2="'+fRby+'" stroke="'+col+'" stroke-width="2.2"/>';
+  } else if(base === 'boss'){
+    // ボス：上端の2点は配管の線上、そこから下は画面に対して常に真っ直ぐ（真の垂直）に伸ばす
+    var bw = r*0.35, bh = r*0.7;
+    var bIconAngDeg = isIso ? 30 : 0;
+    var bt = bIconAngDeg*Math.PI/180, bux=Math.cos(bt), buy=Math.sin(bt);
+    var bTopL={x:-bw*bux,y:-bw*buy}, bTopR={x:bw*bux,y:bw*buy};
+    var bBotL={x:bTopL.x,y:bTopL.y+bh}, bBotR={x:bTopR.x,y:bTopR.y+bh};
+    body = '<g transform="scale(-1,1)"><path d="M '+bTopL.x+' '+bTopL.y+' L '+bBotL.x+' '+bBotL.y+' L '+bBotR.x+' '+bBotR.y+' L '+bTopR.x+' '+bTopR.y+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></g>';
+  } else if(base === 'strainer'){
+    var sAng = (isIso ? 30 : 0) * Math.PI/180;
+    var sux=Math.cos(sAng), suy=Math.sin(sAng);
+    function sAlong(d){ return {x:d*sux, y:d*suy}; }
+    function sPerp(base,d){ return {x:base.x-d*suy, y:base.y+d*sux}; }
+    function sDown(base,d){ return {x:base.x, y:base.y+d}; }
+    var spux = 0;
+    var spuy = 1;
+    function sPerpTilt(base,d){ return {x:base.x+d*spux, y:base.y+d*spuy}; }
+    var sHalfW=r*0.5, sCapHalfW=r*0.85;
+    var sBotDrop=r*1.3, sCap1Drop=-r*0.85, sCap2Drop=sCap1Drop-r*0.3;
+    var sFlOfs=r*1.5, sFlGap=r*0.18, sFlHalfH=r*0.55;
+    var sBaseL=sAlong(-sHalfW), sBaseR=sAlong(sHalfW);
+    var sBotL=sDown(sBaseL,sBotDrop), sBotR=sDown(sBaseR,sBotDrop);
+    var sCap1L=sDown(sBaseL,sCap1Drop), sCap1R=sDown(sBaseR,sCap1Drop);
+    var sCapBaseL=sAlong(-sCapHalfW), sCapBaseR=sAlong(sCapHalfW);
+    var sCap1WL=sDown(sCapBaseL,sCap1Drop), sCap1WR=sDown(sCapBaseR,sCap1Drop);
+    var sCap2WL=sDown(sCapBaseL,sCap2Drop), sCap2WR=sDown(sCapBaseR,sCap2Drop);
+    body = '<g transform="scale(-1,1)">'+
+      '<line x1="'+sBaseL.x+'" y1="'+sBaseL.y+'" x2="'+sBaseR.x+'" y2="'+sBaseR.y+'" stroke="#fff" stroke-width="6.6"/>'+
+      [-1,1].map(function(sgn){
+        var b=sAlong(sgn*sHalfW), f=sAlong(sgn*(sFlOfs-sFlGap/2));
+        return '<line x1="'+b.x+'" y1="'+b.y+'" x2="'+f.x+'" y2="'+f.y+'" stroke="'+col+'" stroke-width="2.2"/>';
+      }).join('')+
+      '<path d="M '+sBotL.x+' '+sBotL.y+' L '+sCap1L.x+' '+sCap1L.y+' M '+sBotR.x+' '+sBotR.y+' L '+sCap1R.x+' '+sCap1R.y+'" stroke="'+col+'" stroke-width="2.2" fill="none"/>'+
+      '<line x1="'+sBotL.x+'" y1="'+sBotL.y+'" x2="'+sBotR.x+'" y2="'+sBotR.y+'" stroke="'+col+'" stroke-width="2.2"/>'+
+      '<path d="M '+sCap1WL.x+' '+sCap1WL.y+' L '+sCap1WR.x+' '+sCap1WR.y+' M '+sCap2WL.x+' '+sCap2WL.y+' L '+sCap2WR.x+' '+sCap2WR.y+'" stroke="'+col+'" stroke-width="2.2" fill="none"/>'+
+      [-1,1].map(function(sgn){
+        var c1=sAlong(sgn*sFlOfs-sFlGap/2), c2=sAlong(sgn*sFlOfs+sFlGap/2);
+        var p1a=sPerpTilt(c1,-sFlHalfH), p1b=sPerpTilt(c1,sFlHalfH), p2a=sPerpTilt(c2,-sFlHalfH), p2b=sPerpTilt(c2,sFlHalfH);
+        return '<path d="M '+p1a.x+' '+p1a.y+' L '+p1b.x+' '+p1b.y+' M '+p2a.x+' '+p2a.y+' L '+p2b.x+' '+p2b.y+'" stroke="'+col+'" stroke-width="2.2" fill="none"/>';
+      }).join('')+
+      '</g>';
+  } else if(base === 'y_strainer'){
+    // Y型ストレーナー：本管は直線＋両端にフランジ（アイソメ用は30°傾き、平面図用は傾きなし）、
+    // 本管からやや左寄りの点から135°（左下方向）に二重線の枝管を伸ばし、先端に蓋線を入れる
+    var yR = r*0.85;
+    var yHalfW=yR*0.9, yMainGap=yR*0.4, yFlGap=yR*0.18, yFlHalfH=yR*0.55;
+    var ymLx=-yHalfW, ymRx=yHalfW;
+    var yFlTilt = (isIso ? 30 : 0) * Math.PI/180;
+    function yPerpTilt(cx,d){ return {x: cx - d*Math.sin(yFlTilt), y: d*Math.cos(yFlTilt)}; }
+    var yF1a=yPerpTilt(ymLx-yFlGap/2,-yFlHalfH), yF1b=yPerpTilt(ymLx-yFlGap/2,yFlHalfH);
+    var yF2a=yPerpTilt(ymLx+yFlGap/2,-yFlHalfH), yF2b=yPerpTilt(ymLx+yFlGap/2,yFlHalfH);
+    var yF3a=yPerpTilt(ymRx-yFlGap/2,-yFlHalfH), yF3b=yPerpTilt(ymRx-yFlGap/2,yFlHalfH);
+    var yF4a=yPerpTilt(ymRx+yFlGap/2,-yFlHalfH), yF4b=yPerpTilt(ymRx+yFlGap/2,yFlHalfH);
+    var yBranchX = yHalfW*0.2;
+    var ybLen=yR*0.75, ybGap=yR*0.42;
+    var ybdx=-0.7071, ybdy=0.7071; // 135°方向（左下）
+    var ybpx=-ybdy, ybpy=ybdx;     // 枝管に垂直な方向
+    // 枝管の二重線は、本管の二重線にちょうど届く位置から描き始める（枝管は本管に対して常に45°なのでcos45で計算）。
+    // 固定の食い込み量だと片方が届かずもう片方が貫通してしまうため、線ごとに個別に求める。
+    var yK = 0.7071; // cos45°
+    var ybInsetBase = yMainGap/(2*yK);
+    var ybInset1 = ybInsetBase - ybGap/2, ybInset2 = ybInsetBase + ybGap/2;
+    var ys1x=yBranchX+ybdx*ybInset1-ybGap/2*ybpx, ys1y=ybdy*ybInset1-ybGap/2*ybpy;
+    var ye1x=yBranchX+ybdx*ybLen-ybGap/2*ybpx, ye1y=ybdy*ybLen-ybGap/2*ybpy;
+    var ys2x=yBranchX+ybdx*ybInset2+ybGap/2*ybpx, ys2y=ybdy*ybInset2+ybGap/2*ybpy;
+    var ye2x=yBranchX+ybdx*ybLen+ybGap/2*ybpx, ye2y=ybdy*ybLen+ybGap/2*ybpy;
+    var ytcx=yBranchX+ybdx*ybLen, ytcy=ybdy*ybLen;
+    var ytax=ytcx-ybGap*0.9*ybpx, ytay=ytcy-ybGap*0.9*ybpy;
+    var ytbx=ytcx+ybGap*0.9*ybpx, ytby=ytcy+ybGap*0.9*ybpy;
+    body = '<line x1="'+ymLx+'" y1="0" x2="'+ymRx+'" y2="0" stroke="#fff" stroke-width="'+(yMainGap+1.8)+'"/>'+
+      '<path d="M '+ymLx+' '+(-yMainGap/2)+' L '+ymRx+' '+(-yMainGap/2)+
+      ' M '+ymLx+' '+(yMainGap/2)+' L '+ymRx+' '+(yMainGap/2)+
+      ' M '+yF1a.x+' '+yF1a.y+' L '+yF1b.x+' '+yF1b.y+
+      ' M '+yF2a.x+' '+yF2a.y+' L '+yF2b.x+' '+yF2b.y+
+      ' M '+yF3a.x+' '+yF3a.y+' L '+yF3b.x+' '+yF3b.y+
+      ' M '+yF4a.x+' '+yF4a.y+' L '+yF4b.x+' '+yF4b.y+
+      ' M '+ys1x+' '+ys1y+' L '+ye1x+' '+ye1y+
+      ' M '+ys2x+' '+ys2y+' L '+ye2x+' '+ye2y+
+      ' M '+ytax+' '+ytay+' L '+ytbx+' '+ytby+
+      '" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linecap="butt"/>';
+  } else if(base === 'flex'){
+    // フレキ：Y型ストレーナーの本管部分（二重線＋両端のフランジ）だけを使う（分岐部分はなし）
+    var fxAng=(isIso?30:0)*Math.PI/180, fxux=Math.cos(fxAng), fxuy=Math.sin(fxAng);
+    function fxAlong(d){ return {x:d*fxux,y:d*fxuy}; }
+    function fxPerp(base,d){ return {x:base.x-d*fxuy, y:base.y+d*fxux}; }
+    var fxFlTilt = isIso ? (30*Math.PI/180) : 0;
+    var fxpux = -fxuy*Math.cos(fxFlTilt) - fxux*Math.sin(fxFlTilt);
+    var fxpuy = -fxuy*Math.sin(fxFlTilt) + fxux*Math.cos(fxFlTilt);
+    function fxPerpTilt(base,d){ return {x:base.x+d*fxpux, y:base.y+d*fxpuy}; }
+    var fxHalfW=r*0.9, fxMainGap=r*0.4, fxFlGap=r*0.18, fxFlHalfH=r*0.55;
+    var fxmL=fxAlong(-fxHalfW), fxmR=fxAlong(fxHalfW);
+    var fxL1=fxPerp(fxmL,-fxMainGap/2), fxL2=fxPerp(fxmR,-fxMainGap/2);
+    var fxL3=fxPerp(fxmL,fxMainGap/2), fxL4=fxPerp(fxmR,fxMainGap/2);
+    var fxc1=fxAlong(-fxHalfW-fxFlGap/2), fxc2=fxAlong(-fxHalfW+fxFlGap/2);
+    var fxc3=fxAlong(fxHalfW-fxFlGap/2), fxc4=fxAlong(fxHalfW+fxFlGap/2);
+    var fxF1a=fxPerpTilt(fxc1,-fxFlHalfH), fxF1b=fxPerpTilt(fxc1,fxFlHalfH);
+    var fxF2a=fxPerpTilt(fxc2,-fxFlHalfH), fxF2b=fxPerpTilt(fxc2,fxFlHalfH);
+    var fxF3a=fxPerpTilt(fxc3,-fxFlHalfH), fxF3b=fxPerpTilt(fxc3,fxFlHalfH);
+    var fxF4a=fxPerpTilt(fxc4,-fxFlHalfH), fxF4b=fxPerpTilt(fxc4,fxFlHalfH);
+    body = '<g transform="rotate('+(isIso?300:180)+')">'+
+      '<line x1="'+fxmL.x+'" y1="'+fxmL.y+'" x2="'+fxmR.x+'" y2="'+fxmR.y+'" stroke="#fff" stroke-width="'+(fxMainGap+1.8)+'"/>'+
+      '<path d="M '+fxL1.x+' '+fxL1.y+' L '+fxL2.x+' '+fxL2.y+
+      ' M '+fxL3.x+' '+fxL3.y+' L '+fxL4.x+' '+fxL4.y+
+      ' M '+fxF1a.x+' '+fxF1a.y+' L '+fxF1b.x+' '+fxF1b.y+
+      ' M '+fxF2a.x+' '+fxF2a.y+' L '+fxF2b.x+' '+fxF2b.y+
+      ' M '+fxF3a.x+' '+fxF3a.y+' L '+fxF3b.x+' '+fxF3b.y+
+      ' M '+fxF4a.x+' '+fxF4a.y+' L '+fxF4b.x+' '+fxF4b.y+
+      '" fill="none" stroke="'+col+'" stroke-width="1.8" stroke-linecap="butt"/>'+
+      '</g>';
   } else if(base === 'gate'){
     body = bowtie(r) + flangeLines(r);
   } else if(base === 'globe'){
@@ -1079,7 +1371,7 @@ function svgIcon(ft, isIso){
 
 // 追加記号（キャップ・フルカップリング・プラグ）のSVGパスを生成
 // drawSimpleMark（canvas描画）と同じ形状をSVGで再現する
-var SIMPLE_MARK_TYPES = ['cap','fullcoupling','plug'];
+var SIMPLE_MARK_TYPES = ['cap','fullcoupling','plug','gauge'];
 function simpleMarkSvg(ft, col, r, lwd){
   var sw = lwd || 1.5;
   if(ft === 'cap'){
@@ -1091,14 +1383,17 @@ function simpleMarkSvg(ft, col, r, lwd){
   } else if(ft === 'plug'){
     var pw=r*0.42, pyTop=-r*0.28, pyBot=r*0.55;
     return '<path d="M '+(-pw)+' '+pyTop+' L '+pw+' '+pyTop+' L 0 '+pyBot+' Z" fill="none" stroke="'+col+'" stroke-width="'+sw+'"/>';
+  } else if(ft === 'gauge'){
+    var gr=r*0.5;
+    return '<circle cx="0" cy="0" r="'+gr+'" fill="#fff" stroke="'+col+'" stroke-width="'+sw+'"/>';
   }
   return '';
 }
 
-var FL_GROUP_ISO   = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['fl_relief','安全弁'],['fl_solenoid','電磁弁'],['fl_control','調節弁'],['flange','フランジ']];
-var NFL_GROUP_ISO  = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁'],['union_new','ユニオン'],['union','六角ニップル'],['rc','RC'],['re_short','RE'],['cap','キャップ'],['fullcoupling','フルカップリング'],['plug','プラグ']];
-var FL_GROUP_PLAN  = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['flange','フランジ']];
-var NFL_GROUP_PLAN = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁'],['union_new','ユニオン'],['union','六角ニップル'],['rc','RC'],['re_short','RE'],['cap','キャップ'],['fullcoupling','フルカップリング'],['plug','プラグ']];
+var FL_GROUP_ISO   = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['fl_relief','安全弁'],['fl_solenoid','電磁弁'],['fl_control','調節弁'],['flange','フランジ'],['strainer','ストレーナー'],['y_strainer','Y型ストレーナー'],['flex','フレキ']];
+var NFL_GROUP_ISO  = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁'],['union_new','ユニオン'],['union','六角ニップル'],['rc','RC'],['re_short','RE'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ']];
+var FL_GROUP_PLAN  = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],['fl_ball','ボール弁'],['fl_butterfly','バタ弁'],['fl_check','チャッキ弁'],['flange','フランジ'],['strainer','ストレーナー'],['y_strainer','Y型ストレーナー'],['flex','フレキ']];
+var NFL_GROUP_PLAN = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁'],['union_new','ユニオン'],['union','六角ニップル'],['rc','RC'],['re_short','RE'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ']];
 
 // 後方互換
 var FL_GROUP = FL_GROUP_ISO;
@@ -1147,9 +1442,54 @@ function toggleSection(key){
 function initCollapsedSections(){
   var st = loadCollapsedSections();
   // 'iso'と'plan'は大枠の折りたたみを廃止したため対象外（常に表示）
-  ['weld','isoFl','isoNfl','planFl','planNfl'].forEach(function(key){ applySectionState(key, !!st[key]); });
+  ['weld','isoFl','isoNfl','isoAsm','planFl','planNfl','planAsm'].forEach(function(key){ applySectionState(key, !!st[key]); });
 }
 
+
+// ── ヘッダー組立品：両端バルブ＋主管＋2本の枝管＋圧力計を1回のタップでまとめて設置 ──
+// バルブは通常の継手と同じ大きさ（scale指定なし＝等倍）で設置する
+// アイソメ用：主管は-30°、圧力計へ向かう枝管は主管に対しさらに-60°（＝絶対角度-90°）で伸ばす
+// 平面図用：主管は水平（0°）、枝管は真上（-90°）のまま
+function placeHeaderAssembly(isPlan, c){
+  saveH();
+  var halfLen = 1.2;      // バルブ間中心から左右への距離（主管全長2.4m相当）
+  var branchOfs = 0.4;    // 中心から枝管取出し位置までの距離
+  var stemLen = 0.7;      // 枝管の長さ
+
+  var headerAngDeg = isPlan ? 0 : -30;
+  var branchAngDeg = isPlan ? -90 : (headerAngDeg - 60); // アイソメ用：主管に対しさらに-60°
+  var hRad = headerAngDeg*Math.PI/180, bRad = branchAngDeg*Math.PI/180;
+  var hx=Math.cos(hRad), hy=Math.sin(hRad);
+  var bx=Math.cos(bRad), by=Math.sin(bRad);
+
+  var left   = {x:c.x-halfLen*hx,   y:c.y-halfLen*hy};
+  var right  = {x:c.x+halfLen*hx,   y:c.y+halfLen*hy};
+  var b1base = {x:c.x-branchOfs*hx, y:c.y-branchOfs*hy};
+  var b2base = {x:c.x+branchOfs*hx, y:c.y+branchOfs*hy};
+  var b1top  = {x:b1base.x+stemLen*bx, y:b1base.y+stemLen*by};
+  var b2top  = {x:b2base.x+stemLen*bx, y:b2base.y+stemLen*by};
+  var fitAngle = ((headerAngDeg % 360) + 360) % 360;
+
+  var pipeMain = {kind:'pipe', pt:S.pt, wx1:left.x, wy1:left.y, wx2:right.x, wy2:right.y};
+  var pipeB1 = {kind:'pipe', pt:S.pt, wx1:b1base.x, wy1:b1base.y, wx2:b1top.x, wy2:b1top.y};
+  var pipeB2 = {kind:'pipe', pt:S.pt, wx1:b2base.x, wy1:b2base.y, wx2:b2top.x, wy2:b2top.y};
+  var fitLeft = {kind:'fitting', ft:'gate', pt:S.pt, wx:left.x, wy:left.y, angle:fitAngle, mirror:false, plan:isPlan};
+  var fitRight = {kind:'fitting', ft:'gate', pt:S.pt, wx:right.x, wy:right.y, angle:fitAngle, mirror:false, plan:isPlan};
+  var gaugeB1 = {kind:'fitting', ft:'gauge', pt:S.pt, wx:b1top.x, wy:b1top.y, angle:0, mirror:false, plan:isPlan};
+  var gaugeB2 = {kind:'fitting', ft:'gauge', pt:S.pt, wx:b2top.x, wy:b2top.y, angle:0, mirror:false, plan:isPlan};
+  var headerGroup = [pipeMain, pipeB1, pipeB2, fitLeft, fitRight, gaugeB1, gaugeB2];
+  headerGroup.forEach(function(e){ S.els.push(e); });
+
+  // 設置直後は他の継手と同じく「選択中」の扱いにし、そのまま回転・鏡像・色変更ができるようにする
+  // （選択が残っている間は赤色でハイライトされる。別の操作に移るか「選択解除」を押すまで維持される）
+  S.multiSel = headerGroup;
+  S.sel = null;
+  updateMultiSelPanel();
+  updateMirrorButton();
+
+  showToast('ヘッダーを設置しました（🔄回転・⇌鏡像がそのまま使えます。長押しで位置調整・伸縮も可能）');
+  render();
+}
 
 function buildFitGrids(){
   var flEl   = document.getElementById('flGrid');
@@ -1189,7 +1529,16 @@ function drawValveBody(r, col, lwd, hasFl, tiltDeg){
   var lTop = { x:-r + (-h)*(-sin30), y: 0 + (-h)*cos30 };
   var lBot = { x:-r + ( h)*(-sin30), y: 0 + ( h)*cos30 };
 
-  // 白塗りクリップ（背景の配管線を隠す）
+  // フランジ線の位置を先に計算しておく（白塗りマスクをそこまで届かせるため）
+  var flGap = r * 0.25;
+  var fh = h * 1.05;
+  var rfTop = { x: r+flGap + (-fh)*(-sin30), y: (-fh)*cos30 };
+  var rfBot = { x: r+flGap + ( fh)*(-sin30), y: ( fh)*cos30 };
+  var lfTop = { x:-(r+flGap) + (-fh)*(-sin30), y: (-fh)*cos30 };
+  var lfBot = { x:-(r+flGap) + ( fh)*(-sin30), y: ( fh)*cos30 };
+
+  // 白塗りクリップ（背景の配管線を隠す）。フランジ付きの場合は胴体～フランジ線の間の
+  // 隙間からも下の配管が透けて見えないよう、その部分も併せて塗りつぶす。
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(0, 0);
@@ -1200,6 +1549,18 @@ function drawValveBody(r, col, lwd, hasFl, tiltDeg){
   ctx.lineTo(lTop.x, lTop.y);
   ctx.lineTo(lBot.x, lBot.y);
   ctx.closePath();
+  if(hasFl){
+    ctx.moveTo(rTop.x, rTop.y);
+    ctx.lineTo(rfTop.x, rfTop.y);
+    ctx.lineTo(rfBot.x, rfBot.y);
+    ctx.lineTo(rBot.x, rBot.y);
+    ctx.closePath();
+    ctx.moveTo(lTop.x, lTop.y);
+    ctx.lineTo(lfTop.x, lfTop.y);
+    ctx.lineTo(lfBot.x, lfBot.y);
+    ctx.lineTo(lBot.x, lBot.y);
+    ctx.closePath();
+  }
   ctx.fillStyle = '#ffffff';
   ctx.fill();
   ctx.restore();
@@ -1222,16 +1583,8 @@ function drawValveBody(r, col, lwd, hasFl, tiltDeg){
   ctx.stroke();
   ctx.restore();
 
-  // フランジ縦線（同じ30°回転の斜め線）
+  // フランジ縦線（同じ30°回転の斜め線。座標は白塗りマスク計算時に算出済みのものを再利用）
   if(hasFl){
-    var flGap = r * 0.25;
-    var fh = h * 1.05;
-    // 右フランジ線（x=r+flGap を軸に垂直線を30°回転）
-    var rfTop = { x: r+flGap + (-fh)*(-sin30), y: (-fh)*cos30 };
-    var rfBot = { x: r+flGap + ( fh)*(-sin30), y: ( fh)*cos30 };
-    // 左フランジ線
-    var lfTop = { x:-(r+flGap) + (-fh)*(-sin30), y: (-fh)*cos30 };
-    var lfBot = { x:-(r+flGap) + ( fh)*(-sin30), y: ( fh)*cos30 };
     ctx.save();
     ctx.strokeStyle = col;
     ctx.lineWidth = lwd * 1.3;
@@ -1300,7 +1653,7 @@ function drawButterflyValve(r, col, lwd, hasFl, drawCol, tiltDeg){
   var L=rot30pt(left,h,tiltDeg), R=rot30pt(right,h,tiltDeg);
   ctx.save();
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(-r*0.95, -r*0.85, r*1.9, r*1.7);
+  ctx.fillRect(-r*1.15, -r*0.85, r*2.3, r*1.7);
   ctx.restore();
 
   ctx.strokeStyle=drawCol; ctx.lineWidth=lwd;
@@ -1339,7 +1692,7 @@ function drawCheckValve(r, col, lwd, hasFl, drawCol, tiltDeg){
   var L=rot30pt(left,h,tiltDeg), R=rot30pt(right,h,tiltDeg);
   ctx.save();
   ctx.fillStyle='#ffffff';
-  ctx.fillRect(-r*0.95, -r*0.85, r*1.9, r*1.7);
+  ctx.fillRect(-r*1.15, -r*0.85, r*2.3, r*1.7);
   ctx.restore();
 
   // |▷◁|の内側（｜と▷◁の間）も白塗り：実際の輪郭（L,R）で塗りつぶす
@@ -1542,6 +1895,224 @@ function drawFlange(r, col, lwd, tiltDeg){
   ctx.restore();
 }
 
+// ストレーナー：閉じた四角(□)にはせず、線の組み合わせで作る（平面図・アイソメ共通の考え方）
+// ・胴体の左右の縦線は、配管の傾きに関係なく画面に対して常に真っ直ぐ（真の垂直）
+// ・底の線・蓋の線2本は、配管と平行になる（縦線の端点同士を結ぶだけなので自動的にそうなる）
+// ・両端の二重線フランジは、配管に対して垂直
+// drawFit側で既に ctx.rotate(ang) が適用された状態で呼ばれるため、まずそれを打ち消してから
+// 「画面基準」の座標で組み立てる（ボスと同じ考え方）。
+function drawStrainer(r, col, lwd, ang, isPlanFlag){
+  ctx.save();
+  ctx.rotate(-(ang||0));
+  var ux = Math.cos(ang||0), uy = Math.sin(ang||0);
+  function alongPipe(d){ return {x: d*ux, y: d*uy}; }       // 配管の向きに沿ってdだけ進んだ点
+  function perp(base, d){ return {x: base.x - d*uy, y: base.y + d*ux}; } // 配管に垂直な方向にdだけ進んだ点
+  function down(base, d){ return {x: base.x, y: base.y + d}; } // 画面上で真下にdだけ進んだ点（真の垂直）
+  // フランジの線は、配管の向き(ang)に関係なく常に本体の縦線と同じ向き（画面に対して真っ直ぐ垂直）に設置する
+  var pux = 0;
+  var puy = 1;
+  function perpTilt(base, d){ return {x: base.x + d*pux, y: base.y + d*puy}; }
+
+  var halfW = r*0.5, capHalfW = r*0.85;
+  var botDrop = r*1.3;
+  var cap1Drop = -r*0.85, cap2Drop = cap1Drop - r*0.3;
+  var flOfs = r*1.5, flGap = r*0.18, flHalfH = r*0.55;
+
+  var baseL = alongPipe(-halfW), baseR = alongPipe(halfW);
+  var botL = down(baseL, botDrop), botR = down(baseR, botDrop);
+  var cap1L = down(baseL, cap1Drop), cap1R = down(baseR, cap1Drop);
+  var capBaseL = alongPipe(-capHalfW), capBaseR = alongPipe(capHalfW);
+  var cap1WL = down(capBaseL, cap1Drop), cap1WR = down(capBaseR, cap1Drop);
+  var cap2WL = down(capBaseL, cap2Drop), cap2WR = down(capBaseR, cap2Drop);
+
+  // 配管線を隠す白マスク（胴体からフランジ線までを覆い、間から配管が透けないようにする）
+  var maskL = alongPipe(-(flOfs + flGap/2)), maskR = alongPipe(flOfs + flGap/2);
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = lwd*3;
+  ctx.beginPath(); ctx.moveTo(maskL.x, maskL.y); ctx.lineTo(maskR.x, maskR.y); ctx.stroke();
+
+  ctx.strokeStyle = col; ctx.lineWidth = lwd; ctx.lineCap = 'butt';
+  // 胴体とフランジの間の配管（センターライン）
+  ctx.beginPath();
+  [-1,1].forEach(function(sgn){
+    var body = alongPipe(sgn*halfW), fl = alongPipe(sgn*(flOfs - flGap/2));
+    ctx.moveTo(body.x, body.y); ctx.lineTo(fl.x, fl.y);
+  });
+  ctx.stroke();
+
+  // 左右の縦線（底から下側の蓋線までで止める。真の垂直）
+  ctx.beginPath();
+  ctx.moveTo(botL.x, botL.y); ctx.lineTo(cap1L.x, cap1L.y);
+  ctx.moveTo(botR.x, botR.y); ctx.lineTo(cap1R.x, cap1R.y);
+  ctx.stroke();
+  // 底の線（配管と平行になる）
+  ctx.beginPath();
+  ctx.moveTo(botL.x, botL.y); ctx.lineTo(botR.x, botR.y);
+  ctx.stroke();
+  // 蓋の線2本（配管と平行、同じ長さで揃える）
+  ctx.beginPath();
+  ctx.moveTo(cap1WL.x, cap1WL.y); ctx.lineTo(cap1WR.x, cap1WR.y);
+  ctx.moveTo(cap2WL.x, cap2WL.y); ctx.lineTo(cap2WR.x, cap2WR.y);
+  ctx.stroke();
+
+  // 両端の二重線フランジ（アイソメ時はさらに30°傾ける）
+  [-1,1].forEach(function(sgn){
+    var c1 = alongPipe(sgn*flOfs - flGap/2);
+    var c2 = alongPipe(sgn*flOfs + flGap/2);
+    var p1a = perpTilt(c1, -flHalfH), p1b = perpTilt(c1, flHalfH);
+    var p2a = perpTilt(c2, -flHalfH), p2b = perpTilt(c2, flHalfH);
+    ctx.beginPath();
+    ctx.moveTo(p1a.x, p1a.y); ctx.lineTo(p1b.x, p1b.y);
+    ctx.moveTo(p2a.x, p2a.y); ctx.lineTo(p2b.x, p2b.y);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+// Y型ストレーナー（平面図専用）：本管はそのまま直線＋両端に二重の切れ目ティック、
+// そこから135°（配管の向きに対して斜め下）に二重線の枝管を伸ばし、先端に蓋線を入れる。
+// drawStrainer/drawBossと同じく、drawFit側で既にctx.rotate(ang)済みの状態で呼ばれるため
+// まずそれを打ち消し、配管の向き(ux,uy)を基準に座標を組み立てる。
+function drawYStrainer(r, col, lwd, ang, isPlanFlag){
+  ctx.save();
+  ctx.rotate(-(ang||0));
+  var ux=Math.cos(ang||0), uy=Math.sin(ang||0);
+  function alongPipe(d){ return {x:d*ux, y:d*uy}; }
+  function rotVec(theta){
+    var c=Math.cos(theta), s=Math.sin(theta);
+    return {x: ux*c-uy*s, y: ux*s+uy*c};
+  }
+  // フランジ線は、アイソメ時のみ他の弁と同じく垂直から更に30°傾ける（平面図は垂直のまま）
+  var flTilt = isPlanFlag ? 0 : (30*Math.PI/180);
+  var pux = -uy*Math.cos(flTilt) - ux*Math.sin(flTilt);
+  var puy = -uy*Math.sin(flTilt) + ux*Math.cos(flTilt);
+  function perpTilt(base,d){ return {x:base.x+d*pux, y:base.y+d*puy}; }
+
+  var halfW=r*0.9, mainGap=r*0.4;
+  var flGap=r*0.18, flHalfH=r*0.55;
+  var mL=alongPipe(-halfW), mR=alongPipe(halfW);
+  var perp=rotVec(Math.PI/2);
+
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineCap='butt';
+  // 本管（水平方向の線は2本＝二重線で描く）。その手前に白マスクを敷き、
+  // 下に通っている配管の線が二重線の間から透けて見えないようにする（フランジ線の外端まで延長）。
+  ctx.save();
+  var maskL=alongPipe(-(halfW+flGap/2)), maskR=alongPipe(halfW+flGap/2);
+  ctx.strokeStyle='#ffffff'; ctx.lineWidth=mainGap+lwd;
+  ctx.beginPath(); ctx.moveTo(maskL.x,maskL.y); ctx.lineTo(maskR.x,maskR.y); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineCap='butt';
+  [-1,1].forEach(function(sgn){
+    var a={x:mL.x+sgn*mainGap/2*perp.x, y:mL.y+sgn*mainGap/2*perp.y};
+    var b={x:mR.x+sgn*mainGap/2*perp.x, y:mR.y+sgn*mainGap/2*perp.y};
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  });
+  // 両端のフランジ（二重線、アイソメ時は配管に対して30°傾ける）
+  [-1,1].forEach(function(sgn){
+    var c1=alongPipe(sgn*halfW-flGap/2), c2=alongPipe(sgn*halfW+flGap/2);
+    var p1a=perpTilt(c1,-flHalfH), p1b=perpTilt(c1,flHalfH);
+    var p2a=perpTilt(c2,-flHalfH), p2b=perpTilt(c2,flHalfH);
+    ctx.beginPath(); ctx.moveTo(p1a.x,p1a.y); ctx.lineTo(p1b.x,p1b.y); ctx.moveTo(p2a.x,p2a.y); ctx.lineTo(p2b.x,p2b.y); ctx.stroke();
+  });
+
+  // Y分岐（ドレン／スクリーン取出し方向）：本管からやや左寄りの点から135°方向へ二重線で伸ばす
+  // 二重線の各線は「本管の二重線にちょうど届く位置」から描き始める。
+  // 固定の食い込み量だと、枝管の傾きと本管との位置関係によって片方の線が本管の線に届かず、
+  // もう片方が本管の線を貫通してしまうため、実際に交わる位置を計算して求める。
+  var branchStart = alongPipe(halfW*0.2);
+  var bd = rotVec(3*Math.PI/4);
+  var bLen = r*0.75, bGap = r*0.42;
+  var bPerp = {x:-bd.y, y:bd.x};
+  var k = bd.x*perp.x + bd.y*perp.y;       // 枝管方向が本管の垂直方向となす角のcos（常に45°→一定値）
+  var m = bPerp.x*perp.x + bPerp.y*perp.y; // 枝管二重線のオフセット方向が本管の垂直方向となす角のcos
+  var ends=[];
+  [-1,1].forEach(function(sgn){
+    var perpOff = {x: sgn*bGap/2*bPerp.x, y: sgn*bGap/2*bPerp.y};
+    var inset = (mainGap/2 - sgn*bGap/2*m) / k; // 本管の二重線（近い側）にちょうど届く食い込み量
+    var s0={x:branchStart.x+bd.x*inset+perpOff.x, y:branchStart.y+bd.y*inset+perpOff.y};
+    var e0={x:branchStart.x+bd.x*bLen+perpOff.x, y:branchStart.y+bd.y*bLen+perpOff.y};
+    ctx.beginPath(); ctx.moveTo(s0.x,s0.y); ctx.lineTo(e0.x,e0.y); ctx.stroke();
+    ends.push(e0);
+  });
+  // 先端の蓋線
+  var tipC={x:branchStart.x+bd.x*bLen, y:branchStart.y+bd.y*bLen};
+  var tipA={x:tipC.x-bGap*0.9*bPerp.x, y:tipC.y-bGap*0.9*bPerp.y};
+  var tipB={x:tipC.x+bGap*0.9*bPerp.x, y:tipC.y+bGap*0.9*bPerp.y};
+  ctx.beginPath(); ctx.moveTo(tipA.x,tipA.y); ctx.lineTo(tipB.x,tipB.y); ctx.stroke();
+
+  ctx.restore();
+}
+// フレキ（フレキシブルジョイント）：Y型ストレーナーの本管部分（二重線＋両端の二重切れ目ティック）だけを使う。
+// 分岐がない点だけがY型ストレーナーと異なる。drawFit側で既にctx.rotate(ang)済みの状態で呼ばれるため、
+// Y型ストレーナーと同じくまずそれを打ち消してから、配管の向き(ux,uy)を基準に座標を組み立てる。
+function drawFlex(r, col, lwd, ang, isPlanFlag){
+  ctx.save();
+  ctx.rotate(-(ang||0));
+  var ux=Math.cos(ang||0), uy=Math.sin(ang||0);
+  function alongPipe(d){ return {x:d*ux, y:d*uy}; }
+  function rotVec(theta){
+    var c=Math.cos(theta), s=Math.sin(theta);
+    return {x: ux*c-uy*s, y: ux*s+uy*c};
+  }
+  // フランジ線は、アイソメ時のみ他の弁と同じく垂直から更に30°傾ける（平面図は垂直のまま）
+  var flTilt = isPlanFlag ? 0 : (30*Math.PI/180);
+  var pux = -uy*Math.cos(flTilt) - ux*Math.sin(flTilt);
+  var puy = -uy*Math.sin(flTilt) + ux*Math.cos(flTilt);
+  function perpTilt(base,d){ return {x:base.x+d*pux, y:base.y+d*puy}; }
+
+  var halfW=r*0.9, mainGap=r*0.4;
+  var flGap=r*0.18, flHalfH=r*0.55;
+  var mL=alongPipe(-halfW), mR=alongPipe(halfW);
+  var perp=rotVec(Math.PI/2);
+
+  // 本管の手前に白マスクを敷き、下に通っている配管の線が二重線の間から透けて見えないようにする（フランジ線の外端まで延長）
+  ctx.save();
+  var maskL=alongPipe(-(halfW+flGap/2)), maskR=alongPipe(halfW+flGap/2);
+  ctx.strokeStyle='#ffffff'; ctx.lineWidth=mainGap+lwd; ctx.lineCap='butt';
+  ctx.beginPath(); ctx.moveTo(maskL.x,maskL.y); ctx.lineTo(maskR.x,maskR.y); ctx.stroke();
+  ctx.restore();
+
+  ctx.strokeStyle=col; ctx.lineWidth=lwd; ctx.lineCap='butt';
+  // 本管（水平方向の線は2本＝二重線で描く）
+  [-1,1].forEach(function(sgn){
+    var a={x:mL.x+sgn*mainGap/2*perp.x, y:mL.y+sgn*mainGap/2*perp.y};
+    var b={x:mR.x+sgn*mainGap/2*perp.x, y:mR.y+sgn*mainGap/2*perp.y};
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  });
+  // 両端のフランジ（二重線、アイソメ時は配管に対して30°傾ける）
+  [-1,1].forEach(function(sgn){
+    var c1=alongPipe(sgn*halfW-flGap/2), c2=alongPipe(sgn*halfW+flGap/2);
+    var p1a=perpTilt(c1,-flHalfH), p1b=perpTilt(c1,flHalfH);
+    var p2a=perpTilt(c2,-flHalfH), p2b=perpTilt(c2,flHalfH);
+    ctx.beginPath(); ctx.moveTo(p1a.x,p1a.y); ctx.lineTo(p1b.x,p1b.y); ctx.moveTo(p2a.x,p2a.y); ctx.lineTo(p2b.x,p2b.y); ctx.stroke();
+  });
+
+  ctx.restore();
+}
+// ボス：1つの記号を丸ごと回転させるのではなく、線を組み合わせて作る
+// ・上端の2点は配管の線上（配管の向きに沿って左右に振り分け）
+// ・そこから下に伸びる2本の縦線は、配管の傾きに関係なく画面に対して常に真っ直ぐ（真の垂直）
+// ・底辺はその2点を結ぶだけ（結果として配管と平行になる）
+// drawFit側で既に ctx.rotate(ang) が適用された状態で呼ばれるため、まずそれを打ち消してから
+// 「画面基準」の座標で組み立てる。
+function drawBoss(r, col, lwd, ang){
+  ctx.save();
+  ctx.rotate(-(ang||0));
+  var halfW = r*0.35, h = r*0.7;
+  var ux = Math.cos(ang||0), uy = Math.sin(ang||0);
+  var topL = {x:-halfW*ux, y:-halfW*uy};
+  var topR = {x: halfW*ux, y: halfW*uy};
+  var botL = {x: topL.x, y: topL.y+h};
+  var botR = {x: topR.x, y: topR.y+h};
+  ctx.strokeStyle = col; ctx.lineWidth = lwd;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(topL.x, topL.y);
+  ctx.lineTo(botL.x, botL.y);
+  ctx.lineTo(botR.x, botR.y);
+  ctx.lineTo(topR.x, topR.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ── プラントノース（方位マーク）：縦の軸線＋矢じり（「4」形）＋基準横線 ──
 // 配置点（wx,wy）は下側の長い横線の中心。上向き（角度0）が既定の向き。
 function northArrowPoints(u){
@@ -1556,7 +2127,7 @@ function northArrowPoints(u){
 }
 function drawNorthArrow(el, sel){
   var sp = w2s(el.wx, el.wy);
-  var col = sel ? '#d32f2f' : (el.color||PIPE_COLOR);
+  var col = el.color ? el.color : (sel ? '#d32f2f' : PIPE_COLOR);
   var u = 16 * S.zoom * (el.scale||1);
   var lwd = 2 * S.zoom;
   var p = northArrowPoints(u);
@@ -1694,6 +2265,12 @@ function drawSimpleMark(ft, r, col, lwd, tiltDeg){
     ctx.beginPath();
     ctx.moveTo(-pw,pyTop); ctx.lineTo(pw,pyTop); ctx.lineTo(0,pyBot);
     ctx.closePath(); ctx.stroke();
+  } else if(ft === 'gauge'){
+    // 圧力計：円のみのシンプルな記号
+    var gr=r*0.5;
+    ctx.beginPath();
+    ctx.arc(0,0,gr,0,Math.PI*2);
+    ctx.fill(); ctx.stroke();
   }
 
   ctx.restore();
@@ -1706,6 +2283,15 @@ function hitTest(sx,sy){
     if(e.kind==='pipe'){
       var p1=w2s(e.wx1,e.wy1),p2=w2s(e.wx2,e.wy2);
       if(segD({x:sx,y:sy},p1,p2)<Math.max(8,lw()/2+6)) return {el:e,part:'body'};
+    } else if(e.kind==='hose'){
+      if(e.pts && e.pts.length>=2){
+        var hit=false;
+        for(var hj=1; hj<e.pts.length && !hit; hj++){
+          var hp1=w2s(e.pts[hj-1].x,e.pts[hj-1].y), hp2=w2s(e.pts[hj].x,e.pts[hj].y);
+          if(segD({x:sx,y:sy},hp1,hp2) < Math.max(8,lw(e.sz)/2+6)) hit=true;
+        }
+        if(hit) return {el:e,part:'body'};
+      }
     } else if(e.kind==='fitting'){
       var sp=w2s(e.wx,e.wy),r=20*S.zoom*(e.scale||1);
       if(dist2(sx,sy,sp.x,sp.y)<r) return {el:e,part:'body'};
@@ -1717,20 +2303,56 @@ function hitTest(sx,sy){
       if(dist2(sx,sy,spn.x,spn.y)<rn) return {el:e,part:'body'};
     } else if(e.kind==='leader'){
       var lp1=w2s(e.wx1,e.wy1), lp2=w2s(e.wx2,e.wy2);
-      if(segD({x:sx,y:sy},lp1,lp2)<10) return {el:e,part:'body'};
-      ctx.font='bold '+(12*S.zoom)+'px sans-serif';
+      ctx.font='bold '+(12*S.zoom*(e.scale||1))+'px sans-serif';
       var lm=ctx.measureText(e.text);
       var goingRight = e.wx2>=e.wx1;
       var boxX = goingRight ? lp2.x+2 : lp2.x-2-lm.width;
-      if(sx>=boxX-2&&sx<=boxX+lm.width+2&&sy>=lp2.y-14*S.zoom&&sy<=lp2.y+2) return {el:e,part:'body'};
+      // 文字（終点）部分と、線の部分を別々に当たり判定する。
+      // 文字を掴んだ場合は終点だけ、線を掴んだ場合は線と文字の両方が動く仕様のため。
+      if(sx>=boxX-2&&sx<=boxX+lm.width+2&&sy>=lp2.y-(14*S.zoom*(e.scale||1))&&sy<=lp2.y+2) return {el:e,part:'text'};
+      if(segD({x:sx,y:sy},lp1,lp2)<10) return {el:e,part:'line'};
     } else if(e.kind==='text'){
       var tp=w2s(e.wx,e.wy);
       ctx.font='bold '+(12*S.zoom*(e.scale||1))+'px sans-serif';
       var m=ctx.measureText(e.text);
-      if(sx>=tp.x-2&&sx<=tp.x+m.width+4&&sy>=tp.y-14*S.zoom&&sy<=tp.y+2) return {el:e,part:'body'};
+      if(sx>=tp.x-2&&sx<=tp.x+m.width+4&&sy>=tp.y-(14*S.zoom*(e.scale||1))&&sy<=tp.y+2) return {el:e,part:'body'};
     }
   }
   return null;
+}
+// 寸法の「数字」部分をタップしたかどうかを判定する（寸法変更ツール用：配管そのものではなく数字をタップする仕様）
+function hitTestDimLabel(sx,sy){
+  if(!S.showDim) return null;
+  var pad=10; // 指でのタップ用に少し広めの当たり判定にする
+  var best=null, bestD=Infinity;
+  for(var i=S.els.length-1;i>=0;i--){
+    var e=S.els[i];
+    if(e.kind!=='pipe') continue;
+    var dx=e.wx2-e.wx1, dy=e.wy2-e.wy1;
+    var len=Math.sqrt(dx*dx+dy*dy);
+    if(len<0.05) continue;
+    var disp=(e.dimText!==undefined) ? e.dimText : (Math.round(len*10)/10).toFixed(1);
+    if(disp==='') continue; // 空欄で非表示にしている寸法はタップ対象外
+    var p1=w2s(e.wx1,e.wy1), p2=w2s(e.wx2,e.wy2);
+    var mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+    var ang=Math.atan2(p2.y-p1.y, p2.x-p1.x);
+    var dispAng=ang;
+    if(dispAng>Math.PI/2||dispAng<-Math.PI/2) dispAng+=Math.PI;
+    var fs=Math.max(9, Math.min(13, 10*S.zoom)) * (e.dimScale||1);
+    var offset=lw()/2+fs+3;
+    ctx.font=fs+'px sans-serif';
+    var tw=ctx.measureText(disp).width;
+    var dxp=sx-mx, dyp=sy-my;
+    var localX = dxp*Math.cos(dispAng)+dyp*Math.sin(dispAng);
+    var localY = -dxp*Math.sin(dispAng)+dyp*Math.cos(dispAng);
+    var halfW = tw/2+3+pad, top = -offset-fs/2-1-pad, bot = -offset+fs/2+1+pad;
+    if(localX>=-halfW && localX<=halfW && localY>=top && localY<=bot){
+      // 中心からの距離が最も近いラベルを優先（複数の寸法が近接している場合の誤タップ対策）
+      var d=Math.sqrt(localX*localX+localY*localY);
+      if(d<bestD){ bestD=d; best=e; }
+    }
+  }
+  return best;
 }
 function dist2(ax,ay,bx,by){ return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by)); }
 function segD(p,a,b){
@@ -1786,7 +2408,7 @@ function tryMergePipesAtPoint(px,py){
   var stillOccupied = S.els.some(function(e){
     return (e.kind==='fitting' || e.kind==='weld') && dist2(e.wx,e.wy,px,py) < EPS;
   });
-  if(stillOccupied) return;
+  if(stillOccupied) return false;
 
   var candidates = [];
   S.els.forEach(function(e){
@@ -1794,7 +2416,7 @@ function tryMergePipesAtPoint(px,py){
     if(dist2(e.wx1,e.wy1,px,py) < EPS) candidates.push({el:e, end:0});
     else if(dist2(e.wx2,e.wy2,px,py) < EPS) candidates.push({el:e, end:1});
   });
-  if(candidates.length !== 2) return; // ちょうど2本の時だけ結合対象とする
+  if(candidates.length !== 2) return false; // ちょうど2本の時だけ結合対象とする
 
   var a=candidates[0], b=candidates[1];
   var aFar = (a.end===0) ? {x:a.el.wx2,y:a.el.wy2} : {x:a.el.wx1,y:a.el.wy1};
@@ -1802,27 +2424,101 @@ function tryMergePipesAtPoint(px,py){
 
   var angA = Math.atan2(py-aFar.y, px-aFar.x); // aFar→点 の向き
   var angB = Math.atan2(bFar.y-py, bFar.x-px); // 点→bFar の向き
-  if(angDiffAbs(angA, angB) > 0.02) return; // 一直線でなければ結合しない（約1°まで許容）
+  if(angDiffAbs(angA, angB) > 0.02) return false; // 一直線でなければ結合しない（約1°まで許容）
 
   a.el.wx1=aFar.x; a.el.wy1=aFar.y; a.el.wx2=bFar.x; a.el.wy2=bFar.y;
   delete a.el.dimText; // 長さが変わるため寸法カスタム文字はリセット
   S.els = S.els.filter(function(e){ return e !== b.el; });
+  return true;
+}
+
+// CADのトリム／延長：targetEl（対象配管）を、boundaryEl（基準配管）の直線まで伸縮させる。
+// tapWorldPos に近い方の端点だけを動かす。mode='extend'なら伸ばす方向、mode='trim'なら縮む方向のときだけ実行する。
+function trimExtendPipe(targetEl, boundaryEl, tapWorldPos, mode){
+  var t1={x:targetEl.wx1,y:targetEl.wy1}, t2={x:targetEl.wx2,y:targetEl.wy2};
+  var b1={x:boundaryEl.wx1,y:boundaryEl.wy1}, b2={x:boundaryEl.wx2,y:boundaryEl.wy2};
+  // どちらの端点がタップ位置に近いかで、動かす端点（moving）と固定する端点（anchor）を決める
+  var d1=dist2(tapWorldPos.x,tapWorldPos.y,t1.x,t1.y), d2=dist2(tapWorldPos.x,tapWorldPos.y,t2.x,t2.y);
+  var anchor = (d1<=d2) ? t2 : t1;
+  var movingPt = (d1<=d2) ? t1 : t2;
+  var movingIsT1 = (d1<=d2);
+
+  // 直線同士の交点を求める（どちらも無限直線として扱い、交わる点まで伸縮させる）
+  var dx1=t2.x-t1.x, dy1=t2.y-t1.y;
+  var dx2=b2.x-b1.x, dy2=b2.y-b1.y;
+  var denom = dx1*dy2 - dy1*dx2;
+  if(Math.abs(denom) < 1e-9) return 'parallel'; // 平行で交点なし
+
+  var dxs = b1.x-anchor.x, dys = b1.y-anchor.y;
+  var t = (dxs*dy2 - dys*dx2) / denom;
+  var ix = anchor.x + dx1*t, iy = anchor.y + dy1*t;
+
+  var newLen = Math.sqrt(Math.pow(ix-anchor.x,2)+Math.pow(iy-anchor.y,2));
+  if(newLen < 0.01) return 'fail'; // 交点が基準点とほぼ同じ＝配管の長さが0になってしまう
+
+  var origLen = Math.sqrt(Math.pow(movingPt.x-anchor.x,2)+Math.pow(movingPt.y-anchor.y,2));
+  var EPS = 0.005; // 5mm程度の誤差は同じ長さとみなす
+  if(mode==='extend' && newLen <= origLen+EPS) return 'wrongdir'; // 延長ツールなのに縮む
+  if(mode==='trim' && newLen >= origLen-EPS) return 'wrongdir';   // トリムツールなのに伸びる
+
+  saveH();
+  if(movingIsT1){ targetEl.wx1=ix; targetEl.wy1=iy; } else { targetEl.wx2=ix; targetEl.wy2=iy; }
+  delete targetEl.dimText; // 長さが変わるため寸法カスタム文字はリセット
+  return 'ok';
+}
+
+// 分割の逆機能：配管の端点付近をタップして、一直線上でつながっている2本の配管を1本に結合する
+function tryJoinNear(sx,sy){
+  var best=null, bestD=26;
+  S.els.forEach(function(e){
+    if(e.kind!=='pipe') return;
+    [{x:e.wx1,y:e.wy1},{x:e.wx2,y:e.wy2}].forEach(function(wp){
+      var sp=w2s(wp.x,wp.y);
+      var d=dist2(sx,sy,sp.x,sp.y);
+      if(d<bestD){ bestD=d; best={x:wp.x,y:wp.y}; }
+    });
+  });
+  if(!best) return 'none';
+  saveH();
+  var ok = tryMergePipesAtPoint(best.x, best.y);
+  if(!ok){
+    S.hist.pop(); // 変化が無かったので直前に積んだUndo履歴は取り消す
+    return 'fail';
+  }
+  return 'ok';
 }
 
 // ── INPUT: MOUSE ───────────────────────────────
 canvas.addEventListener('pointerdown',function(e){
   if(e.pointerType==='touch') return; e.preventDefault();
-  if(e.button===2){S.panning=true;S.panStart={x:e.offsetX-S.px,y:e.offsetY-S.py};return;}
+  hideContextMenu();
+  if(e.button===1){
+    // 中クリック（ホイール押し込み）ドラッグ＝パン。CADソフトと同じ操作方法。
+    S.panning=true;S.panStart={x:e.offsetX-S.px,y:e.offsetY-S.py};
+    return;
+  }
+  if(e.button===2){
+    // 右クリックはドラッグせずその場でメニューを開く（一般的なアプリと同じ挙動）
+    openContextMenu({x:e.offsetX,y:e.offsetY});
+    return;
+  }
   startPress({x:e.offsetX,y:e.offsetY});
 });
 canvas.addEventListener('pointermove',function(e){
   if(e.pointerType==='touch') return; e.preventDefault();
+  S.lastMousePos={x:e.offsetX,y:e.offsetY};
   movePress({x:e.offsetX,y:e.offsetY});
 });
 canvas.addEventListener('pointerup',function(e){
   if(e.pointerType==='touch') return; e.preventDefault();
+  if(e.button===1 || e.button===2){
+    S.panning=false;
+    return;
+  }
   endPress({x:e.offsetX,y:e.offsetY});
 });
+// 右クリック時のブラウザ標準メニューは常に抑止する（スマホの長押しで発火するcontextmenuも含む。
+// タッチ操作の長押しは別途touchstart系のタイマーで処理しているためここでは何もしない）
 canvas.addEventListener('contextmenu',function(e){e.preventDefault();});
 canvas.addEventListener('wheel',function(e){
   e.preventDefault(); zoomAt(e.deltaY>0?0.88:1.14,e.offsetX,e.offsetY);
@@ -1891,12 +2587,32 @@ function startPress(pos){
   S.downPos = pos;
   S.longPressFired = false;
 
+  // 背景PDFの位置調整モード：長押し判定を挟まず、そのままドラッグで移動する
+  if(S.tool==='movebg' && S.bg){
+    S.bgDragging = true;
+    S.bgDragStart = s2w(pos.x,pos.y);
+    S.bgOrig = {x:S.bg.wx, y:S.bg.wy};
+    return;
+  }
+
+  // トリム／延長ツール：2回のタップで基準配管→対象配管を選ぶ操作なので、
+  // 長押しによる「つかんで移動」判定を挟まない（挟むと選択タップが移動操作に化けてしまうため）
+  if(S.tool==='trim' || S.tool==='extend'){
+    return;
+  }
+
+  // ホース（フリーライン）：配管と同じく、長押し判定を経由させる。
+  // これにより「その場でじっとしていれば既存要素を長押しで掴める／ドラッグすればホースを描き始める」という
+  // 配管ツールと同じ挙動になる（すぐに描画を確定させてしまうと長押しでの既存要素の移動ができなくなるため）。
+
   // 既にドラッグモード中（移動操作中）にタップしたら、その場での移動を継続する
   if(S.dragMode==='move'){
     S.dragging=true;
     var el2=S.dragEl;
     if(el2.kind==='pipe' || el2.kind==='leader'){
       var ww0=s2w(pos.x,pos.y); S.dragOffX=ww0.x-el2.wx1; S.dragOffY=ww0.y-el2.wy1;
+    } else if(el2.kind==='hose'){
+      var ww0h=s2w(pos.x,pos.y); S.dragOffX=ww0h.x-el2.pts[0].x; S.dragOffY=ww0h.y-el2.pts[0].y;
     } else {
       var ww1=s2w(pos.x,pos.y); S.dragOffX=ww1.x-el2.wx; S.dragOffY=ww1.y-el2.wy;
     }
@@ -1908,18 +2624,14 @@ function startPress(pos){
     S.dragGroupStartWorld = s2w(pos.x,pos.y);
     S.dragGroupOrig = S.multiSel.map(function(el){
       if(el.kind==='pipe' || el.kind==='leader'){ return {el:el, wx1:el.wx1, wy1:el.wy1, wx2:el.wx2, wy2:el.wy2}; }
+      if(el.kind==='hose'){ return {el:el, pts:el.pts.map(function(p){return {x:p.x,y:p.y};})}; }
       return {el:el, wx:el.wx, wy:el.wy};
     });
     return;
   }
 
-  // 文字ツール：タップで始点、ドラッグして終点まで引き出し線を引く
-  if(S.tool==='text'){
-    S.drawingLeader = true;
-    S.leaderStart = s2w(pos.x,pos.y);
-    S.leaderPrev = null;
-    return;
-  }
+  // 文字ツール：配管・ホースと同じく長押し判定を経由させる（じっとしていれば既存要素を長押しで掴める）。
+  // 実際の引出線の開始はhandleDown側（動かした時／タップ確定時）で行う。
 
   cancelLongPress();
   S.longPressTimer = setTimeout(function(){
@@ -1929,6 +2641,13 @@ function startPress(pos){
 }
 
 function movePress(pos){
+  if(S.bgDragging){
+    var wgp = s2w(pos.x,pos.y);
+    S.bg.wx = S.bgOrig.x + (wgp.x - S.bgDragStart.x);
+    S.bg.wy = S.bgOrig.y + (wgp.y - S.bgDragStart.y);
+    render();
+    return;
+  }
   // 長押し判定前に大きく動いたら長押しをキャンセルして通常描画系の動きに切替
   if(S.longPressTimer && S.downPos && dist2(pos.x,pos.y,S.downPos.x,S.downPos.y) > MOVE_CANCEL_PX){
     cancelLongPress();
@@ -1944,6 +2663,8 @@ function movePress(pos){
       if(o.el.kind==='pipe' || o.el.kind==='leader'){
         o.el.wx1=o.wx1+sdx; o.el.wy1=o.wy1+sdy; o.el.wx2=o.wx2+sdx; o.el.wy2=o.wy2+sdy;
         if(o.el.kind==='pipe') delete o.el.dimText;
+      } else if(o.el.kind==='hose'){
+        o.el.pts = o.pts.map(function(p){ return {x:p.x+sdx, y:p.y+sdy}; });
       } else {
         o.el.wx=o.wx+sdx; o.el.wy=o.wy+sdy;
       }
@@ -1955,7 +2676,7 @@ function movePress(pos){
       // 固定モードではなく、指の「今の位置」が端に近いか中央寄りかを毎回判定する
       var pEp1=w2s(S.dragEl.wx1,S.dragEl.wy1), pEp2=w2s(S.dragEl.wx2,S.dragEl.wy2);
       var dEp0=dist2(pos.x,pos.y,pEp1.x,pEp1.y), dEp1=dist2(pos.x,pos.y,pEp2.x,pEp2.y);
-      var END_ZONE_PX=40;
+      var END_ZONE_PX=20;
       if(dEp0<END_ZONE_PX || dEp1<END_ZONE_PX){
         // 伸縮：近い方の端点だけを動かす（グリッドスナップ）
         S.dragSubMode='stretch';
@@ -1988,9 +2709,21 @@ function movePress(pos){
       S.dragEl.wx=sg2.x; S.dragEl.wy=sg2.y;
     } else if(S.dragEl.kind==='leader'){
       var ww3=s2w(pos.x,pos.y);
-      var nx1 = ww3.x-S.dragOffX, ny1 = ww3.y-S.dragOffY;
-      var ldx = S.dragEl.wx2-S.dragEl.wx1, ldy = S.dragEl.wy2-S.dragEl.wy1;
-      S.dragEl.wx1=nx1; S.dragEl.wy1=ny1; S.dragEl.wx2=nx1+ldx; S.dragEl.wy2=ny1+ldy;
+      if(S.dragPart==='text'){
+        // 文字（終点）だけを動かす。始点はそのまま。
+        S.dragEl.wx2 = ww3.x-S.dragOffX;
+        S.dragEl.wy2 = ww3.y-S.dragOffY;
+      } else {
+        // 線を掴んだ場合は始点・終点とも同じ量だけ平行移動する（線と文字が一緒に動く）
+        var nx1 = ww3.x-S.dragOffX, ny1 = ww3.y-S.dragOffY;
+        var ldx = S.dragEl.wx2-S.dragEl.wx1, ldy = S.dragEl.wy2-S.dragEl.wy1;
+        S.dragEl.wx1=nx1; S.dragEl.wy1=ny1; S.dragEl.wx2=nx1+ldx; S.dragEl.wy2=ny1+ldy;
+      }
+    } else if(S.dragEl.kind==='hose'){
+      var wwh2=s2w(pos.x,pos.y);
+      var nhx = wwh2.x-S.dragOffX, nhy = wwh2.y-S.dragOffY;
+      var hdx = nhx-S.dragEl.pts[0].x, hdy = nhy-S.dragEl.pts[0].y;
+      S.dragEl.pts = S.dragEl.pts.map(function(p){ return {x:p.x+hdx, y:p.y+hdy}; });
     }
     render(); return;
   }
@@ -2010,10 +2743,37 @@ function movePress(pos){
     S.rangeEnd = {x:pos.x, y:pos.y};
     render();
   }
+  if(S.hoseDrawing){
+    var hwp = s2w(pos.x,pos.y);
+    var lastPt = S.hosePts[S.hosePts.length-1];
+    var dxp=hwp.x-lastPt.x, dyp=hwp.y-lastPt.y;
+    if(Math.sqrt(dxp*dxp+dyp*dyp) > 0.025){ // 点を打ちすぎないよう、少し動いてから追加する
+      S.hosePts.push(hwp);
+      render();
+    }
+  }
 }
 
 function endPress(pos){
   cancelLongPress();
+  if(S.bgDragging){ S.bgDragging=false; return; }
+  if(S.hoseDrawing){
+    S.hoseDrawing=false;
+    if(S.hosePts && S.hosePts.length>=2){
+      var totalLen=0;
+      for(var hi=1; hi<S.hosePts.length; hi++){
+        var ha=S.hosePts[hi-1], hb=S.hosePts[hi];
+        totalLen += Math.sqrt((hb.x-ha.x)*(hb.x-ha.x)+(hb.y-ha.y)*(hb.y-ha.y));
+      }
+      if(totalLen >= GRID_M*0.5){
+        saveH();
+        S.els.push({kind:'hose', pts:S.hosePts, pt:S.pt});
+      }
+    }
+    S.hosePts=null;
+    render();
+    return;
+  }
   if(S.panning){S.panning=false;return;}
   if(S.dragMode==='groupmove'){
     if(S.justGrabbed){
@@ -2096,8 +2856,77 @@ function endPress(pos){
   }
   // 長押しが発火していなければ通常タップとして処理
   if(!S.longPressFired){
+    // 選択ツール（旧:範囲選択）でドラッグせずタップだけした場合：
+    // 継手や配管など要素の上なら長押しと同じく即座に掴んで編集モードに入り、
+    // 何もない場所なら選択を解除する（ドラッグでの範囲（矩形）選択は
+    // movePress側のhandleDown呼び出しで別途開始される）。
+    if(S.tool==='rangesel'){
+      if(grabElementAt(pos)){
+        // タップは既に離れた状態で確定しているので、掴んだ直後の状態のまま
+        // （長押しで掴んで指を離した直後と同じ状態）にしておく
+        S.justGrabbed = false;
+        S.dragging = false;
+      } else {
+        S.multiSel=[];
+        showToast('選択を解除しました');
+        render();
+      }
+      return;
+    }
     handleDown(pos);
   }
+}
+
+// ── 要素を掴んで編集モード（移動・回転・色/太さ変更など）に入る共通処理 ──────
+// 長押し（activateLongPress）と、選択ツールでのタップ（endPress側）の両方から呼ばれる。
+// 対象の上でなければ何もせず false を返す。
+function grabElementAt(pos){
+  var h=hitTest(pos.x,pos.y);
+  if(!h){ return false; }
+
+  if(h.el.kind==='pipe' || h.el.kind==='fitting' || h.el.kind==='text' || h.el.kind==='weld' || h.el.kind==='leader' || h.el.kind==='northarrow' || h.el.kind==='hose'){
+    S.justGrabbed = true;
+    saveH();
+    S.dragMode='move'; S.dragEl=h.el; S.dragging=true; S.dragEntryTime=Date.now();
+    S.sel=h.el;
+    S.lastFit = (h.el.kind==='fitting') ? h.el : null;
+    S.dragSubMode = null; S.dragEnd = null;
+    if(h.el.kind==='pipe'){
+      // 掴んだ時点では固定せず、動かしている最中の指の位置で毎回「移動」か「伸縮」かを判定する
+      S.dragSubMode = null;
+      var ww=s2w(pos.x,pos.y); S.dragOffX=ww.x-h.el.wx1; S.dragOffY=ww.y-h.el.wy1;
+    } else if(h.el.kind==='leader'){
+      // 「文字」を掴んだ場合は終点(文字位置)だけを動かし、始点は固定する。
+      // 「線」を掴んだ場合は始点・終点（＝線と文字の両方）をまとめて動かす。
+      S.dragPart = h.part;
+      var ww;
+      if(h.part==='text'){
+        ww=s2w(pos.x,pos.y); S.dragOffX=ww.x-h.el.wx2; S.dragOffY=ww.y-h.el.wy2;
+      } else {
+        ww=s2w(pos.x,pos.y); S.dragOffX=ww.x-h.el.wx1; S.dragOffY=ww.y-h.el.wy1;
+      }
+    } else if(h.el.kind==='hose'){
+      var wwh=s2w(pos.x,pos.y); S.dragOffX=wwh.x-h.el.pts[0].x; S.dragOffY=wwh.y-h.el.pts[0].y;
+    } else {
+      var ww2=s2w(pos.x,pos.y); S.dragOffX=ww2.x-h.el.wx; S.dragOffY=ww2.y-h.el.wy;
+    }
+    if(h.el.kind==='fitting'){
+      showToast('↔ ドラッグで移動 / 下の回転ボタンで回転 — タップで確定');
+    } else if(h.el.kind==='northarrow'){
+      showToast('↔ ドラッグで移動 / 下の回転ボタンで回転 — タップで確定');
+    } else if(h.el.kind==='weld'){
+      showToast('↔ 配管線上をドラッグで移動 — タップで確定');
+    } else if(h.el.kind==='pipe'){
+      showToast('↔ 中央付近をドラッグで移動 / 端付近をドラッグで伸縮 — タップで確定');
+    } else if(h.el.kind==='leader'){
+      showToast(h.part==='text' ? '↔ 文字をドラッグで移動（始点は固定）— タップで確定' : '↔ 線ごとドラッグで移動 — タップで確定');
+    } else {
+      showToast('↔ ドラッグで移動 — タップで確定');
+    }
+    render();
+    return true;
+  }
+  return false;
 }
 
 // ── 長押し発火時の処理 ─────────────────────────
@@ -2112,42 +2941,11 @@ function activateLongPress(pos){
       return;
     }
   }
-  var h=hitTest(pos.x,pos.y);
-  if(!h){ return; }
-
-  if(h.el.kind==='pipe' || h.el.kind==='fitting' || h.el.kind==='text' || h.el.kind==='weld' || h.el.kind==='leader' || h.el.kind==='northarrow'){
-    S.justGrabbed = true;
-    saveH();
-    S.dragMode='move'; S.dragEl=h.el; S.dragging=true; S.dragEntryTime=Date.now();
-    S.sel=h.el;
-    S.lastFit = (h.el.kind==='fitting') ? h.el : null;
-    S.dragSubMode = null; S.dragEnd = null;
-    if(h.el.kind==='pipe'){
-      // 長押し時点では固定せず、動かしている最中の指の位置で毎回「移動」か「伸縮」かを判定する
-      S.dragSubMode = null;
-      var ww=s2w(pos.x,pos.y); S.dragOffX=ww.x-h.el.wx1; S.dragOffY=ww.y-h.el.wy1;
-    } else if(h.el.kind==='leader'){
-      var ww=s2w(pos.x,pos.y); S.dragOffX=ww.x-h.el.wx1; S.dragOffY=ww.y-h.el.wy1;
-    } else {
-      var ww2=s2w(pos.x,pos.y); S.dragOffX=ww2.x-h.el.wx; S.dragOffY=ww2.y-h.el.wy;
-    }
-    if(h.el.kind==='fitting'){
-      showToast('↔ ドラッグで移動 / 下の回転ボタンで回転 — タップで確定');
-    } else if(h.el.kind==='northarrow'){
-      showToast('↔ ドラッグで移動 / 下の回転ボタンで回転 — タップで確定');
-    } else if(h.el.kind==='weld'){
-      showToast('↔ 配管線上をドラッグで移動 — タップで確定');
-    } else if(h.el.kind==='pipe'){
-      showToast('↔ 中央付近をドラッグで移動 / 端付近をドラッグで伸縮 — タップで確定');
-    } else {
-      showToast('↔ ドラッグで移動 — タップで確定');
-    }
-    render();
-  }
+  grabElementAt(pos);
 }
 
 function endDragMode(){
-  S.dragMode=null; S.dragEl=null; S.dragging=false; S.snapPt=null; S.justGrabbed=false; S.dragSubMode=null; S.dragEnd=null;
+  S.dragMode=null; S.dragEl=null; S.dragging=false; S.snapPt=null; S.justGrabbed=false; S.dragSubMode=null; S.dragEnd=null; S.dragPart=null;
   showToast('✅ 確定'); updateMirrorButton(); render();
 }
 
@@ -2177,6 +2975,7 @@ function startGroupMove(pos){
   S.dragGroupStartWorld = s2w(pos.x,pos.y);
   S.dragGroupOrig = S.multiSel.map(function(el){
     if(el.kind==='pipe' || el.kind==='leader'){ return {el:el, wx1:el.wx1, wy1:el.wy1, wx2:el.wx2, wy2:el.wy2}; }
+    if(el.kind==='hose'){ return {el:el, pts:el.pts.map(function(p){return {x:p.x,y:p.y};})}; }
     return {el:el, wx:el.wx, wy:el.wy};
   });
   showToast('↔ ドラッグで選択範囲ごと移動 — タップで確定');
@@ -2295,6 +3094,15 @@ function handleDown(pos){
     }
     return;
   }
+  if(S.tool==='headerPlan' || S.tool==='headerIso'){
+    if(hitTest(pos.x,pos.y)){
+      showToast('配管や継手が無い場所をタップしてください');
+      return;
+    }
+    var hc = snapGrid(s2w(pos.x,pos.y).x, s2w(pos.x,pos.y).y);
+    placeHeaderAssembly(S.tool==='headerPlan', hc);
+    return;
+  }
   if(S.tool==='northarrow'){
     var wn = snapGrid(s2w(pos.x,pos.y).x, s2w(pos.x,pos.y).y);
     saveH();
@@ -2346,19 +3154,77 @@ function handleDown(pos){
     return;
   }
   if(S.tool==='dim'){
-    var hd = hitTest(pos.x,pos.y);
-    if(hd && hd.el.kind==='pipe'){
-      var pipeEl = hd.el;
+    var pipeEl = hitTestDimLabel(pos.x,pos.y);
+    if(pipeEl){
       var len = Math.sqrt(Math.pow(pipeEl.wx2-pipeEl.wx1,2)+Math.pow(pipeEl.wy2-pipeEl.wy1,2));
       var defaultVal = (pipeEl.dimText !== undefined) ? pipeEl.dimText : (Math.round(len*100)/100).toFixed(1);
-      openTextInput('寸法を編集（空欄で寸法非表示・線の長さは変わりません）', defaultVal, function(t){
+      openTextInput('寸法を編集', defaultVal, function(t, mode){
+        var trimmed = String(t).trim();
         saveH();
-        pipeEl.dimText = String(t).trim(); // 空欄ならそのまま空文字として保存し、表示も空白にする
+        if(mode==='real'){
+          var num = parseFloat(trimmed);
+          if(trimmed==='' || isNaN(num) || num<=0){
+            showToast('実寸変更には正の数値を入力してください');
+            return;
+          }
+          // 始点を固定したまま、現在の向きのまま終点を伸縮して実際の長さを変更する
+          var ux = (pipeEl.wx2-pipeEl.wx1)/(len||1), uy = (pipeEl.wy2-pipeEl.wy1)/(len||1);
+          pipeEl.wx2 = pipeEl.wx1 + ux*num;
+          pipeEl.wy2 = pipeEl.wy1 + uy*num;
+          delete pipeEl.dimText;
+          showToast('配管の長さを'+num+'に変更しました（始点は固定）');
+        } else {
+          pipeEl.dimText = trimmed; // 空欄ならそのまま空文字として保存し、表示も空白にする
+          showToast('表示のみ変更しました（実際の長さは変わりません）');
+        }
         render();
-      }, true);
+      }, true, null, true);
     } else {
-      showToast('配管をタップしてください');
+      showToast('寸法の数字をタップしてください');
     }
+    return;
+  }
+  if(S.tool==='join'){
+    var jr = tryJoinNear(pos.x,pos.y);
+    if(jr==='ok'){
+      showToast('配管を結合しました');
+      render();
+    } else if(jr==='fail'){
+      showToast('結合できません（一直線上でつながる配管の端点をタップしてください）');
+    } else {
+      showToast('つながっている配管の端点付近をタップしてください');
+    }
+    return;
+  }
+  if(S.tool==='trim' || S.tool==='extend'){
+    var trimModeLabel = (S.tool==='trim') ? 'トリム' : '延長';
+    var ht = hitTest(pos.x,pos.y);
+    if(!ht || ht.el.kind!=='pipe'){
+      showToast(S.trimBoundary ? (trimModeLabel+'したい配管をタップしてください') : '基準になる配管をタップしてください');
+      return;
+    }
+    if(!S.trimBoundary){
+      S.trimBoundary = ht.el;
+      S.sel = ht.el;
+      showToast('基準配管を選択しました。次に'+trimModeLabel+'したい配管をタップしてください');
+      render();
+      return;
+    }
+    if(ht.el === S.trimBoundary){
+      showToast('基準配管と同じ配管です。別の配管をタップしてください');
+      return;
+    }
+    var trimMsg = trimExtendPipe(ht.el, S.trimBoundary, s2w(pos.x,pos.y), S.tool);
+    if(trimMsg==='ok'){
+      showToast(trimModeLabel+'しました。続けて他の配管もタップできます');
+    } else if(trimMsg==='parallel'){
+      showToast('基準配管と平行なため交点がありません');
+    } else if(trimMsg==='wrongdir'){
+      showToast(S.tool==='extend' ? 'この端点は基準配管より先にあるため延長できません（トリムをお使いください）' : 'この端点は基準配管に届いていないためトリムできません（延長をお使いください）');
+    } else {
+      showToast(trimModeLabel+'できませんでした');
+    }
+    render();
     return;
   }
   if(S.tool==='pipe'){
@@ -2366,6 +3232,21 @@ function handleDown(pos){
     S.snapPt=snap;
     var st=snap||snapGrid(s2w(pos.x,pos.y).x,s2w(pos.x,pos.y).y);
     S.drawing=true; S.drawStart=st; render();
+  }
+  if(S.tool==='hose'){
+    // ホースはフリーラインなのでグリッドにはスナップしない。始点だけを記録し、
+    // 以降の移動（movePress側）で経路を追加していく（配管の描き始めと同じ構造）。
+    S.hoseDrawing = true;
+    S.hosePts = [s2w(pos.x,pos.y)];
+    render();
+  }
+  if(S.tool==='text'){
+    // 文字ツールも配管・ホースと同じ構造：ここで始点を記録し、以降の移動（movePress側）で
+    // 引出線の終点をプレビューする。動かさずタップで確定すれば引出線なしの単なる文字になる。
+    S.drawingLeader = true;
+    S.leaderStart = s2w(pos.x,pos.y);
+    S.leaderPrev = null;
+    render();
   }
 }
 
@@ -2411,6 +3292,13 @@ function finalizeRangeSelect(pos){
   var y0=Math.min(S.rangeStart.y,pos.y), y1=Math.max(S.rangeStart.y,pos.y);
   S.rangeStart=null; S.rangeEnd=null;
   if(x1-x0<4 && y1-y0<4){
+    // ほぼ動かずに指を離した場合：継手や配管の上なら掴んで編集モードに入り、
+    // 何もない場所なら選択解除として扱う
+    if(grabElementAt(pos)){
+      S.justGrabbed = false;
+      S.dragging = false;
+      return;
+    }
     S.multiSel=[];
     showToast('選択を解除しました');
     render();
@@ -2421,6 +3309,12 @@ function finalizeRangeSelect(pos){
     if(e.kind==='pipe' || e.kind==='leader'){
       var p1=w2s(e.wx1,e.wy1), p2=w2s(e.wx2,e.wy2);
       if(p1.x>=x0&&p1.x<=x1&&p1.y>=y0&&p1.y<=y1&&p2.x>=x0&&p2.x<=x1&&p2.y>=y0&&p2.y<=y1) picked.push(e);
+    } else if(e.kind==='hose'){
+      var allIn = e.pts && e.pts.every(function(wp){
+        var sp2=w2s(wp.x,wp.y);
+        return sp2.x>=x0&&sp2.x<=x1&&sp2.y>=y0&&sp2.y<=y1;
+      });
+      if(allIn) picked.push(e);
     } else if(e.kind==='fitting' || e.kind==='weld' || e.kind==='text' || e.kind==='northarrow'){
       var sp=w2s(e.wx,e.wy);
       if(sp.x>=x0&&sp.x<=x1&&sp.y>=y0&&sp.y<=y1) picked.push(e);
@@ -2447,6 +3341,115 @@ function deleteMultiSel(){
   showToast(toDelete.length+'個を削除しました');
   render();
 }
+// ── 右クリックコンテキストメニュー（PC向け） ────────────
+// 単体要素の削除（消去ツールと同じ挙動：継手を削除した箇所は自動で配管を結合）
+function deleteSingleElement(el){
+  saveH();
+  var mergePt = (el.kind==='fitting') ? {x:el.wx, y:el.wy} : null;
+  S.els = S.els.filter(function(e){ return e!==el; });
+  S.multiSel = S.multiSel.filter(function(e){ return e!==el; });
+  if(mergePt) tryMergePipesAtPoint(mergePt.x, mergePt.y);
+  showToast('削除しました');
+  render();
+}
+function hideContextMenu(){
+  var menu=document.getElementById('ctxMenu');
+  if(menu) menu.style.display='none';
+}
+function showContextMenuItems(items,pos){
+  var menu=document.getElementById('ctxMenu');
+  menu.innerHTML='';
+  items.forEach(function(it){
+    if(it.sep){ var s=document.createElement('div'); s.className='ctx-sep'; menu.appendChild(s); return; }
+    var b=document.createElement('div');
+    b.className='ctx-item'; b.textContent=it.label;
+    b.onclick=function(ev){ ev.stopPropagation(); hideContextMenu(); it.fn(); };
+    menu.appendChild(b);
+  });
+  var wrap=document.getElementById('wrap');
+  var ww=wrap.clientWidth, wh=wrap.clientHeight;
+  menu.style.display='block';
+  var mw=menu.offsetWidth||140, mh=menu.offsetHeight||40;
+  menu.style.left=Math.max(4,Math.min(pos.x,ww-mw-4))+'px';
+  menu.style.top=Math.max(4,Math.min(pos.y,wh-mh-4))+'px';
+}
+// 右クリックした位置に応じてメニュー内容を出し分ける
+function openContextMenu(pos){
+  var items=[];
+  // ① 範囲選択中で、選択済みの範囲内を右クリックした場合はグループ操作メニュー
+  if(S.tool==='rangesel' && S.multiSel && S.multiSel.length>0){
+    var bbox=multiSelScreenBBox();
+    if(bbox && pos.x>=bbox.x0 && pos.x<=bbox.x1 && pos.y>=bbox.y0 && pos.y<=bbox.y1){
+      var cnt=S.multiSel.length;
+      items.push({label:'グループ移動 開始',fn:function(){ startGroupMove(pos); }});
+      items.push({label:'グループ回転',fn:function(){ rotateStep(); }});
+      items.push({label:'グループ尺度変更',fn:function(){ applyScaleToTargets(S.multiSel.slice()); }});
+      items.push({sep:true});
+      items.push({label:'グループ削除（'+cnt+'個）',fn:deleteMultiSel});
+      items.push({sep:true});
+      items.push({label:'キャンセル',fn:hideContextMenu});
+      showContextMenuItems(items,pos);
+      return;
+    }
+  }
+  // ② 要素の上を右クリックした場合
+  var h=hitTest(pos.x,pos.y);
+  if(h){
+    items.push({label:'移動 開始',fn:function(){ activateLongPress(pos); }});
+    if(h.el.kind==='fitting' || h.el.kind==='pipe' || h.el.kind==='northarrow'){
+      items.push({label:'回転',fn:function(){ S.sel=h.el; S.lastFit=(h.el.kind==='fitting')?h.el:null; rotateStep(); }});
+    }
+    items.push({label:'尺度変更',fn:function(){ applyScaleToTargets([h.el]); }});
+    items.push({sep:true});
+    items.push({label:'削除',fn:function(){ deleteSingleElement(h.el); }});
+    items.push({sep:true});
+    items.push({label:'キャンセル',fn:hideContextMenu});
+    showContextMenuItems(items,pos);
+    return;
+  }
+  // ③ 何もない場所を右クリックした場合
+  items.push({label:'元に戻す（undo）',fn:undoAct});
+  items.push({label:'やり直し（redo）',fn:redoAct});
+  if(S.bg){ items.push({label:'背景の位置調整',fn:function(){ setTool('movebg'); }}); }
+  items.push({sep:true});
+  items.push({label:'全消去',fn:clearAll});
+  items.push({sep:true});
+  items.push({label:'キャンセル',fn:hideContextMenu});
+  showContextMenuItems(items,pos);
+}
+document.addEventListener('click',function(e){
+  var menu=document.getElementById('ctxMenu');
+  if(menu && menu.style.display==='block' && !menu.contains(e.target)) hideContextMenu();
+});
+
+// ── PCキーボード操作：Esc＝ニュートラルへ戻る／Enter＝現在のマウス位置で確定 ──
+// Enterは「進行中の操作」がある場合のみ、直前のpointermoveで記録した座標に対して
+// タップ（endPress）と同じ確定処理を行う。マウスを動かさずに正確な位置で確定したい、
+// という意図のための機能なので、何も進行中でなければ何もしない。
+function confirmAtLastMouse(){
+  if(!S.lastMousePos) return;
+  var busy = !!S.dragMode || S.drawing || S.drawingLeader || S.rangeSelecting || S.hoseDrawing || S.pendingScale || S.bgDragging;
+  if(!busy) return;
+  var pos = S.lastMousePos;
+  S.downPos = pos;      // タップ位置＝現在のマウス位置とみなす（移動量0扱いにするため）
+  S.longPressFired = false;
+  endPress(pos);
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    e.preventDefault();
+    hideContextMenu();
+    escapeToNeutral();
+    return;
+  }
+  if(e.key==='Enter'){
+    var tag=(document.activeElement && document.activeElement.tagName)||'';
+    if(tag==='INPUT' || tag==='TEXTAREA') return; // 各入力欄は個別のEnter処理に任せる
+    hideContextMenu();
+    confirmAtLastMouse();
+  }
+});
+
 function updateMultiSelPanel(){
   var panel=document.getElementById('multiSelPanel');
   if(!panel) return;
@@ -2457,40 +3460,112 @@ function updateMultiSelPanel(){
     buildColorSwatches();
   }
 }
-// 配管を長押しして移動・伸縮モードに入っている間、色と太さを変更できるパネル
+// 配管を長押しして移動・伸縮モードに入っている間、色・太さ・文字サイズを変更できるパネル
+// （文字／引き出し線を長押ししている間は、色と文字サイズの変更パネルとして使う）
 var PIPE_THICKNESS = [{label:'細',val:1.2},{label:'中',val:2},{label:'太',val:3.5}];
+var TEXT_SIZES = [{label:'小',val:0.75},{label:'中',val:1},{label:'大',val:1.4},{label:'特大',val:1.8}];
 function updatePipeEditPanel(){
   var panel=document.getElementById('pipeEditPanel');
   if(!panel) return;
-  var show = !!(S.dragMode==='move' && S.dragEl && S.dragEl.kind==='pipe');
-  panel.classList.toggle('vis', show);
-  if(show) buildPipeEditPanel();
+  var el = S.dragEl;
+  var isPipe = !!(S.dragMode==='move' && el && (el.kind==='pipe' || el.kind==='hose'));
+  var isText = !!(S.dragMode==='move' && el && (el.kind==='text' || el.kind==='leader'));
+  var isFitting = !!(S.dragMode==='move' && el && (el.kind==='fitting' || el.kind==='weld' || el.kind==='northarrow'));
+  panel.classList.toggle('vis', isPipe || isText || isFitting);
+  if(isPipe || isText || isFitting) buildPipeEditPanel(isPipe, !!(el && el.kind==='hose'), isFitting, el);
 }
-function buildPipeEditPanel(){
+function buildPipeEditPanel(isPipe, isHose, isFitting, el){
+  var showDimCtrls = isPipe && !isHose;
+  var fitTitleMap = {fitting:'継手編集中', weld:'溶接記号編集中', northarrow:'プラントノース編集中'};
+  document.getElementById('pipeEditTitle').textContent = isFitting ? (fitTitleMap[el && el.kind] || '編集中') : (isHose ? 'ホース編集中' : (isPipe ? '配管編集中' : '文字編集中'));
+
+  var tabsHost = document.getElementById('colorTargetTabs');
+  if(tabsHost) tabsHost.style.display = showDimCtrls ? '' : 'none';
+  if(!showDimCtrls){
+    S.colorEditTarget = 'pipe';
+  } else if(S.colorEditTarget!=='pipe' && S.colorEditTarget!=='dim'){
+    S.colorEditTarget = 'pipe';
+  }
+  updateColorTabsUI(isHose, isPipe, showDimCtrls, isFitting ? ((fitTitleMap[el && el.kind]||'').replace('編集中','の色')) : null);
+
   var colorHost=document.getElementById('pipeColorSwatches');
   if(colorHost && !colorHost.childNodes.length){
     var html='';
     MULTISEL_COLORS.forEach(function(c){
-      html += '<button class="rot-btn" style="background:'+c+';min-height:28px;" onclick="applyPipeColor(\''+c+'\')"></button>';
+      html += '<button class="rot-btn" style="background:'+c+';min-height:28px;" onclick="applyColorForTarget(\''+c+'\')"></button>';
     });
-    html += '<button class="rot-btn" onclick="applyPipeColor(null)">既定色</button>';
+    html += '<button class="rot-btn" onclick="applyColorForTarget(null)">既定色</button>';
     colorHost.innerHTML = html;
   }
+
   var thickHost=document.getElementById('pipeThicknessBtns');
-  if(thickHost && !thickHost.childNodes.length){
+  thickHost.style.display = isPipe ? '' : 'none';
+  if(isPipe && thickHost && !thickHost.childNodes.length){
     thickHost.innerHTML = PIPE_THICKNESS.map(function(t){
       return '<button class="rot-btn" onclick="applyPipeThickness('+t.val+')">'+t.label+'</button>';
     }).join('');
   }
+
+  var textSizeLabel=document.getElementById('pipeTextSizeLabel');
+  var textSizeHost=document.getElementById('pipeTextSizeBtns');
+  var hideTextSize = isHose || isFitting;
+  textSizeLabel.style.display = hideTextSize ? 'none' : '';
+  textSizeHost.style.display = hideTextSize ? 'none' : '';
+  textSizeLabel.textContent = isPipe ? '寸法文字サイズ' : '文字サイズ';
+  if(!hideTextSize && textSizeHost && !textSizeHost.childNodes.length){
+    textSizeHost.innerHTML = TEXT_SIZES.map(function(t){
+      return '<button class="rot-btn" onclick="applyTextSize('+t.val+')">'+t.label+'</button>';
+    }).join('');
+  }
 }
-function applyPipeColor(hex){
-  if(!S.dragEl || S.dragEl.kind!=='pipe') return;
+// 「配管」／「寸法」タブの見た目（選択中を強調）とラベル文言を更新する
+function updateColorTabsUI(isHose, isPipe, showDimCtrls, fitLabel2){
+  var label=document.getElementById('pipeColorLabel');
+  var pb=document.getElementById('tabPipeColorBtn'), db=document.getElementById('tabDimColorBtn');
+  if(showDimCtrls){
+    if(label) label.textContent = (S.colorEditTarget==='dim') ? '寸法文字の色' : '配管の色';
+    if(pb){ pb.style.background = (S.colorEditTarget==='pipe') ? '#0277bd' : ''; pb.style.color = (S.colorEditTarget==='pipe') ? '#fff' : ''; }
+    if(db){ db.style.background = (S.colorEditTarget==='dim') ? '#0277bd' : ''; db.style.color = (S.colorEditTarget==='dim') ? '#fff' : ''; }
+  } else {
+    if(label) label.textContent = fitLabel2 ? fitLabel2 : (isHose ? 'ホースの色' : (isPipe ? '配管の色' : '文字の色'));
+    if(pb){ pb.style.background=''; pb.style.color=''; }
+    if(db){ db.style.background=''; db.style.color=''; }
+  }
+}
+// タブ（配管／寸法）を切り替える。以後の色スウォッチのタップはこちらで選んだ対象に適用される
+function setColorEditTarget(t){
+  S.colorEditTarget = t;
+  var el=S.dragEl;
+  var isPipe = !!(S.dragMode==='move' && el && (el.kind==='pipe' || el.kind==='hose'));
+  var isHose = !!(el && el.kind==='hose');
+  updateColorTabsUI(isHose, isPipe, isPipe && !isHose);
+}
+// 現在選択中のタブ（配管／寸法）に応じて、同じ色スウォッチを配管色・寸法文字色どちらにも使い回す
+function applyColorForTarget(hex){
+  if(S.colorEditTarget==='dim'){ applyDimColor(hex); }
+  else { applyDragElColor(hex); }
+}
+function applyDragElColor(hex){
+  if(!S.dragEl) return;
   saveH();
   if(hex){ S.dragEl.color = hex; } else { delete S.dragEl.color; }
   render();
 }
-function applyPipeThickness(val){
+function applyDimColor(hex){
   if(!S.dragEl || S.dragEl.kind!=='pipe') return;
+  saveH();
+  if(hex){ S.dragEl.dimColor = hex; } else { delete S.dragEl.dimColor; }
+  render();
+}
+function applyTextSize(val){
+  if(!S.dragEl) return;
+  saveH();
+  if(S.dragEl.kind==='pipe'){ S.dragEl.dimScale = val; }
+  else { S.dragEl.scale = val; }
+  render();
+}
+function applyPipeThickness(val){
+  if(!S.dragEl || (S.dragEl.kind!=='pipe' && S.dragEl.kind!=='hose')) return;
   saveH();
   S.dragEl.sz = val;
   render();
@@ -2680,21 +3755,27 @@ function setTool(t){
   S.tool=t;
   S.pendingScale=false;
   S.multiSel=[]; S.rangeSelecting=false; S.rangeStart=null; S.rangeEnd=null;
+  S.trimBoundary=null; S.sel=null; // トリム/延長の基準配管選択もツール切替でリセットする
   ['bPipe','bDim','bTxt','bErs','bSel'].forEach(function(id){document.getElementById(id).classList.remove('on');});
   var m={pipe:'bPipe',dim:'bDim',text:'bTxt',eraser:'bErs',rangesel:'bSel'};
   if(m[t]) document.getElementById(m[t]).classList.add('on');
-  var keepDrawerOpen = ['fitting','stampExisting','stampNew','split'];
+  var keepDrawerOpen = ['fitting','stampExisting','stampNew','split','join','hose','headerPlan','headerIso','trim','extend'];
   if(keepDrawerOpen.indexOf(t)===-1) closeDrawer();
   updateSt(); updateMirrorButton(); updateMultiSelPanel(); updatePipeEditPanel();
 }
 function setToolFitting(){
-  setTool('fitting');
   var d=document.getElementById('drawer');
+  if(d.classList.contains('open')){
+    closeDrawer();
+    return;
+  }
+  setTool('fitting');
   d.classList.add('open');
 }
 
 // ── ESCボタン：進行中の操作をすべて中断し、ニュートラルな状態（配管ツール）に戻す ──
 function escapeToNeutral(){
+  hideContextMenu();
   closeTextInput();
   closeShareSheet();
   cancelLongPress();
@@ -2717,12 +3798,26 @@ function setWeldTool(t){
 }
 
 // ── HISTORY ────────────────────────────────────
-function saveH(){S.hist.push(JSON.stringify(S.els));if(S.hist.length>80)S.hist.shift();}
+function saveH(){
+  S.hist.push(JSON.stringify(S.els));
+  if(S.hist.length>80)S.hist.shift();
+  S.histRedo=[]; // 新しい操作をしたら、やり直し履歴は無効になる（一般的なUndo/Redoと同じ挙動）
+}
 function undoAct(){
   if(S.dragMode==='groupmove'){ endGroupMove(); return; }
   if(S.dragMode){endDragMode();return;}
   if(!S.hist.length){showToast('これ以上戻せません');return;}
+  S.histRedo.push(JSON.stringify(S.els));
+  if(S.histRedo.length>80)S.histRedo.shift();
   S.els=JSON.parse(S.hist.pop());S.sel=null;hidePop();render();showToast('元に戻しました');
+}
+function redoAct(){
+  if(S.dragMode==='groupmove'){ endGroupMove(); return; }
+  if(S.dragMode){endDragMode();return;}
+  if(!S.histRedo.length){showToast('これ以上やり直せません');return;}
+  S.hist.push(JSON.stringify(S.els));
+  if(S.hist.length>80)S.hist.shift();
+  S.els=JSON.parse(S.histRedo.pop());S.sel=null;hidePop();render();showToast('やり直しました');
 }
 function clearAll(){
   if(!S.els.length) return;
@@ -2740,7 +3835,7 @@ function closeDrawer(){
 
 // ── STATUS / TOAST ─────────────────────────────
 function updateSt(){
-  var tn={pipe:'配管',fitting:'継手',dim:'寸法',text:'文字',eraser:'消去',northarrow:'プラントノース'};
+  var tn={pipe:'配管',fitting:'継手',dim:'寸法',text:'文字',eraser:'消去',northarrow:'プラントノース',split:'分割',join:'結合',trim:'トリム',extend:'延長',headerPlan:'ヘッダー(平面)',headerIso:'ヘッダー(アイソメ)',movebg:'背景PDF位置調整',hose:'ホース',rangesel:'選択'};
   var mode='';
   if(S.dragMode==='move'){
     if(S.dragEl && S.dragEl.kind==='fitting'){
@@ -2764,7 +3859,20 @@ function showToast(msg){
 
 // ── テキスト入力オーバーレイ ─────────────────────
 var textInputCallback = null;
-function openTextInput(title, initialValue, callback, numericOnly, stepVal){
+var textInputMode = 'real';
+function setTextInputMode(m){
+  textInputMode = m;
+  var rb=document.getElementById('modeBtnReal'), db=document.getElementById('modeBtnDisplay');
+  if(rb) rb.classList.toggle('active', m==='real');
+  if(db) db.classList.toggle('active', m==='display');
+  // 切替タブが出ている時だけ、入力欄のtypeも実寸(数値専用)／表示のみ(自由記述)で切り替える
+  if(document.getElementById('textInputModeToggle').style.display !== 'none'){
+    var f=document.getElementById('textInputField');
+    if(m==='real'){ f.setAttribute('inputmode','decimal'); f.setAttribute('type','number'); f.setAttribute('step','0.01'); }
+    else { f.setAttribute('inputmode','text'); f.setAttribute('type','text'); f.removeAttribute('step'); }
+  }
+}
+function openTextInput(title, initialValue, callback, numericOnly, stepVal, showModeToggle){
   document.getElementById('textInputTitle').textContent = title;
   var f = document.getElementById('textInputField');
   f.value = initialValue || '';
@@ -2777,15 +3885,22 @@ function openTextInput(title, initialValue, callback, numericOnly, stepVal){
     f.setAttribute('type','text');
     f.removeAttribute('step');
   }
+  // 「実寸を変更／表示のみ変更」の切替（寸法編集など、必要な場面だけ表示する）
+  document.getElementById('textInputModeToggle').style.display = showModeToggle ? 'flex' : 'none';
+  if(showModeToggle) setTextInputMode('real');
   textInputCallback = callback;
   document.getElementById('textInputOverlay').classList.add('vis');
-  // モバイルでキーボードを確実に開くため、少し遅延を入れてfocusを呼ぶ
+  // モバイルでポップアップ表示と同時にキーボードが開くよう、タップ操作と同じ同期処理内でfocusを呼ぶ
+  // （setTimeoutで遅延させるとユーザー操作からの猶予が切れ、iOS等でキーボードが自動で開かなくなるため）
   var f2 = document.getElementById('textInputField');
   f2.removeAttribute('readonly');
-  setTimeout(function(){
+  f2.focus();
+  if(f2.value) f2.select();
+  // 一部のAndroid機種など、表示直後のfocusが効かない端末向けのフォールバック
+  requestAnimationFrame(function(){
     f2.focus();
     if(f2.value) f2.select();
-  }, 120);
+  });
 }
 function closeTextInput(){
   document.getElementById('textInputOverlay').classList.remove('vis');
@@ -2793,10 +3908,11 @@ function closeTextInput(){
 }
 function confirmTextInput(){
   var v = document.getElementById('textInputField').value;
+  var mode = textInputMode;
   var cb = textInputCallback;
   document.getElementById('textInputOverlay').classList.remove('vis');
   textInputCallback = null;
-  if(cb) cb(v);
+  if(cb) cb(v, mode);
 }
 
 // ── EXPORT ─────────────────────────────────────
@@ -2823,12 +3939,146 @@ function svgFlangeBody(r,col,lwd,tiltDeg){
   return '<path d="M '+L.tx+' '+L.ty+' L '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' L '+L.bx+' '+L.by+' Z" fill="#fff"/>'+
     '<path d="M '+L.tx+' '+L.ty+' L '+L.bx+' '+L.by+' M '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+'" stroke="'+col+'" stroke-width="'+(lwd*1.4)+'" fill="none"/>';
 }
+function svgStrainerBody(r,col,lwd,angDeg,isPlanFlag){
+  var a=(angDeg||0)*Math.PI/180, ux=Math.cos(a), uy=Math.sin(a);
+  function alongPipe(d){ return {x:d*ux, y:d*uy}; }
+  function perp(base,d){ return {x:base.x-d*uy, y:base.y+d*ux}; }
+  function down(base,d){ return {x:base.x, y:base.y+d}; }
+  var pux = 0;
+  var puy = 1;
+  function perpTilt(base,d){ return {x:base.x+d*pux, y:base.y+d*puy}; }
+
+  var halfW=r*0.5, capHalfW=r*0.85;
+  var botDrop=r*1.3, cap1Drop=-r*0.85, cap2Drop=cap1Drop-r*0.3;
+  var flOfs=r*1.5, flGap=r*0.18, flHalfH=r*0.55;
+
+  var baseL=alongPipe(-halfW), baseR=alongPipe(halfW);
+  var botL=down(baseL,botDrop), botR=down(baseR,botDrop);
+  var cap1L=down(baseL,cap1Drop), cap1R=down(baseR,cap1Drop);
+  var capBaseL=alongPipe(-capHalfW), capBaseR=alongPipe(capHalfW);
+  var cap1WL=down(capBaseL,cap1Drop), cap1WR=down(capBaseR,cap1Drop);
+  var cap2WL=down(capBaseL,cap2Drop), cap2WR=down(capBaseR,cap2Drop);
+
+  var maskL=alongPipe(-(flOfs+flGap/2)), maskR=alongPipe(flOfs+flGap/2);
+  var s='<line x1="'+maskL.x+'" y1="'+maskL.y+'" x2="'+maskR.x+'" y2="'+maskR.y+'" stroke="#fff" stroke-width="'+(lwd*3)+'"/>';
+  // 胴体とフランジの間の配管（センターライン）
+  [-1,1].forEach(function(sgn){
+    var body=alongPipe(sgn*halfW), fl=alongPipe(sgn*(flOfs-flGap/2));
+    s+='<line x1="'+body.x+'" y1="'+body.y+'" x2="'+fl.x+'" y2="'+fl.y+'" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  });
+  s+='<path d="M '+botL.x+' '+botL.y+' L '+cap1L.x+' '+cap1L.y+' M '+botR.x+' '+botR.y+' L '+cap1R.x+' '+cap1R.y+'" stroke="'+col+'" stroke-width="'+lwd+'" fill="none"/>';
+  s+='<line x1="'+botL.x+'" y1="'+botL.y+'" x2="'+botR.x+'" y2="'+botR.y+'" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  s+='<path d="M '+cap1WL.x+' '+cap1WL.y+' L '+cap1WR.x+' '+cap1WR.y+' M '+cap2WL.x+' '+cap2WL.y+' L '+cap2WR.x+' '+cap2WR.y+'" stroke="'+col+'" stroke-width="'+lwd+'" fill="none"/>';
+  [-1,1].forEach(function(sgn){
+    var c1=alongPipe(sgn*flOfs-flGap/2), c2=alongPipe(sgn*flOfs+flGap/2);
+    var p1a=perpTilt(c1,-flHalfH), p1b=perpTilt(c1,flHalfH), p2a=perpTilt(c2,-flHalfH), p2b=perpTilt(c2,flHalfH);
+    s+='<path d="M '+p1a.x+' '+p1a.y+' L '+p1b.x+' '+p1b.y+' M '+p2a.x+' '+p2a.y+' L '+p2b.x+' '+p2b.y+'" stroke="'+col+'" stroke-width="'+lwd+'" fill="none"/>';
+  });
+  return s;
+}
+function svgYStrainerBody(r,col,lwd,angDeg,isPlanFlag){
+  var a=(angDeg||0)*Math.PI/180, ux=Math.cos(a), uy=Math.sin(a);
+  function alongPipe(d){ return {x:d*ux, y:d*uy}; }
+  function rotVec(theta){
+    var c=Math.cos(theta), s=Math.sin(theta);
+    return {x: ux*c-uy*s, y: ux*s+uy*c};
+  }
+  var flTilt = isPlanFlag ? 0 : (30*Math.PI/180);
+  var pux = -uy*Math.cos(flTilt) - ux*Math.sin(flTilt);
+  var puy = -uy*Math.sin(flTilt) + ux*Math.cos(flTilt);
+  function perpTilt(base,d){ return {x:base.x+d*pux, y:base.y+d*puy}; }
+  var halfW=r*0.9, mainGap=r*0.4;
+  var flGap=r*0.18, flHalfH=r*0.55;
+  var mL=alongPipe(-halfW), mR=alongPipe(halfW);
+  var perp=rotVec(Math.PI/2);
+  var s='';
+  // 本管の手前に白マスクを敷き、下の配管線が二重線の間から透けないようにする（フランジ線の外端まで延長）
+  var maskL=alongPipe(-(halfW+flGap/2)), maskR=alongPipe(halfW+flGap/2);
+  s+='<line x1="'+maskL.x+'" y1="'+maskL.y+'" x2="'+maskR.x+'" y2="'+maskR.y+'" stroke="#fff" stroke-width="'+(mainGap+lwd)+'"/>';
+  // 本管（二重線）
+  [-1,1].forEach(function(sgn){
+    var pa={x:mL.x+sgn*mainGap/2*perp.x, y:mL.y+sgn*mainGap/2*perp.y};
+    var pb={x:mR.x+sgn*mainGap/2*perp.x, y:mR.y+sgn*mainGap/2*perp.y};
+    s+='<line x1="'+pa.x+'" y1="'+pa.y+'" x2="'+pb.x+'" y2="'+pb.y+'" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  });
+  // 両端のフランジ（二重線、アイソメ時は配管に対して30°傾ける）
+  [-1,1].forEach(function(sgn){
+    var c1=alongPipe(sgn*halfW-flGap/2), c2=alongPipe(sgn*halfW+flGap/2);
+    var p1a=perpTilt(c1,-flHalfH), p1b=perpTilt(c1,flHalfH), p2a=perpTilt(c2,-flHalfH), p2b=perpTilt(c2,flHalfH);
+    s+='<path d="M '+p1a.x+' '+p1a.y+' L '+p1b.x+' '+p1b.y+' M '+p2a.x+' '+p2a.y+' L '+p2b.x+' '+p2b.y+'" stroke="'+col+'" stroke-width="'+lwd+'" fill="none"/>';
+  });
+  // Y分岐：二重線の各線は本管の二重線にちょうど届く位置から描き始める（交点を計算）
+  var branchStart=alongPipe(halfW*0.2);
+  var bd=rotVec(3*Math.PI/4);
+  var bLen=r*0.75, bGap=r*0.42;
+  var bPerp={x:-bd.y,y:bd.x};
+  var k=bd.x*perp.x+bd.y*perp.y;
+  var m=bPerp.x*perp.x+bPerp.y*perp.y;
+  [-1,1].forEach(function(sgn){
+    var perpOff={x:sgn*bGap/2*bPerp.x, y:sgn*bGap/2*bPerp.y};
+    var inset=(mainGap/2 - sgn*bGap/2*m)/k;
+    var s0={x:branchStart.x+bd.x*inset+perpOff.x, y:branchStart.y+bd.y*inset+perpOff.y};
+    var e0={x:branchStart.x+bd.x*bLen+perpOff.x, y:branchStart.y+bd.y*bLen+perpOff.y};
+    s+='<line x1="'+s0.x+'" y1="'+s0.y+'" x2="'+e0.x+'" y2="'+e0.y+'" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  });
+  // 先端の蓋線
+  var tipC={x:branchStart.x+bd.x*bLen, y:branchStart.y+bd.y*bLen};
+  var tipA={x:tipC.x-bGap*0.9*bPerp.x, y:tipC.y-bGap*0.9*bPerp.y};
+  var tipB={x:tipC.x+bGap*0.9*bPerp.x, y:tipC.y+bGap*0.9*bPerp.y};
+  s+='<line x1="'+tipA.x+'" y1="'+tipA.y+'" x2="'+tipB.x+'" y2="'+tipB.y+'" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  return s;
+}
+function svgFlexBody(r,col,lwd,angDeg,isPlanFlag){
+  // フレキ：Y型ストレーナーの本管部分（二重線＋両端のフランジ）だけを使う（分岐部分はなし）
+  var a=(angDeg||0)*Math.PI/180, ux=Math.cos(a), uy=Math.sin(a);
+  function alongPipe(d){ return {x:d*ux, y:d*uy}; }
+  function rotVec(theta){
+    var c=Math.cos(theta), s=Math.sin(theta);
+    return {x: ux*c-uy*s, y: ux*s+uy*c};
+  }
+  var flTilt = isPlanFlag ? 0 : (30*Math.PI/180);
+  var pux = -uy*Math.cos(flTilt) - ux*Math.sin(flTilt);
+  var puy = -uy*Math.sin(flTilt) + ux*Math.cos(flTilt);
+  function perpTilt(base,d){ return {x:base.x+d*pux, y:base.y+d*puy}; }
+  var halfW=r*0.9, mainGap=r*0.4;
+  var flGap=r*0.18, flHalfH=r*0.55;
+  var mL=alongPipe(-halfW), mR=alongPipe(halfW);
+  var perp=rotVec(Math.PI/2);
+  var s='';
+  var maskL=alongPipe(-(halfW+flGap/2)), maskR=alongPipe(halfW+flGap/2);
+  s+='<line x1="'+maskL.x+'" y1="'+maskL.y+'" x2="'+maskR.x+'" y2="'+maskR.y+'" stroke="#fff" stroke-width="'+(mainGap+lwd)+'"/>';
+  [-1,1].forEach(function(sgn){
+    var pa={x:mL.x+sgn*mainGap/2*perp.x, y:mL.y+sgn*mainGap/2*perp.y};
+    var pb={x:mR.x+sgn*mainGap/2*perp.x, y:mR.y+sgn*mainGap/2*perp.y};
+    s+='<line x1="'+pa.x+'" y1="'+pa.y+'" x2="'+pb.x+'" y2="'+pb.y+'" stroke="'+col+'" stroke-width="'+lwd+'"/>';
+  });
+  [-1,1].forEach(function(sgn){
+    var c1=alongPipe(sgn*halfW-flGap/2), c2=alongPipe(sgn*halfW+flGap/2);
+    var p1a=perpTilt(c1,-flHalfH), p1b=perpTilt(c1,flHalfH), p2a=perpTilt(c2,-flHalfH), p2b=perpTilt(c2,flHalfH);
+    s+='<path d="M '+p1a.x+' '+p1a.y+' L '+p1b.x+' '+p1b.y+' M '+p2a.x+' '+p2a.y+' L '+p2b.x+' '+p2b.y+'" stroke="'+col+'" stroke-width="'+lwd+'" fill="none"/>';
+  });
+  return s;
+}
+function svgBossBody(r,col,lwd,angDeg){
+  var halfW=r*0.35, h=r*0.7;
+  var t=(angDeg||0)*Math.PI/180, ux=Math.cos(t), uy=Math.sin(t);
+  var topL={x:-halfW*ux,y:-halfW*uy}, topR={x:halfW*ux,y:halfW*uy};
+  var botL={x:topL.x,y:topL.y+h}, botR={x:topR.x,y:topR.y+h};
+  var path='<path d="M '+topL.x+' '+topL.y+' L '+botL.x+' '+botL.y+' L '+botR.x+' '+botR.y+' L '+topR.x+' '+topR.y+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round" stroke-linecap="round"/>';
+  return '<g transform="rotate('+(-(angDeg||0))+')">'+path+'</g>';
+}
 function svgValveBodyBody(r,col,lwd,hasFl,tiltDeg){
   var h=r*0.7, R=rot30pt(r,h,tiltDeg), L=rot30pt(-r,h,tiltDeg);
-  var out='<path d="M '+L.tx+' '+L.ty+' L 0 0 L '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' L 0 0 L '+L.bx+' '+L.by+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round"/>';
+  var out='';
   if(hasFl){
+    // 胴体～フランジ線の間の隙間も白塗りして、下の配管が透けて見えないようにする
     var flGap=r*0.25, fh=h*1.05;
     var rf=rot30pt(r+flGap,fh,tiltDeg), lf=rot30pt(-(r+flGap),fh,tiltDeg);
+    out += '<path d="M '+R.tx+' '+R.ty+' L '+rf.tx+' '+rf.ty+' L '+rf.bx+' '+rf.by+' L '+R.bx+' '+R.by+' Z" fill="#fff"/>';
+    out += '<path d="M '+L.tx+' '+L.ty+' L '+lf.tx+' '+lf.ty+' L '+lf.bx+' '+lf.by+' L '+L.bx+' '+L.by+' Z" fill="#fff"/>';
+  }
+  out += '<path d="M '+L.tx+' '+L.ty+' L 0 0 L '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' L 0 0 L '+L.bx+' '+L.by+' Z" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'" stroke-linejoin="round"/>';
+  if(hasFl){
     out += '<path d="M '+rf.tx+' '+rf.ty+' L '+rf.bx+' '+rf.by+' M '+lf.tx+' '+lf.ty+' L '+lf.bx+' '+lf.by+'" stroke="'+col+'" stroke-width="'+(lwd*1.3)+'" fill="none"/>';
   }
   return out;
@@ -2837,7 +4087,7 @@ function svgButterflyBody(r,col,lwd,hasFl,tiltDeg){
   var left=-r*0.55, right=r*0.55, h=r*0.62;
   var L=rot30pt(left,h,tiltDeg), R=rot30pt(right,h,tiltDeg);
   var mx=(L.bx+R.tx)/2, my=(L.by+R.ty)/2;
-  var out='<rect x="'+(-r*0.95)+'" y="'+(-r*0.85)+'" width="'+(r*1.9)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
+  var out='<rect x="'+(-r*1.15)+'" y="'+(-r*0.85)+'" width="'+(r*2.3)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
     '<path d="M '+L.tx+' '+L.ty+' L '+L.bx+' '+L.by+' M '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' M '+L.bx+' '+L.by+' L '+R.tx+' '+R.ty+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'"/>'+
     '<circle cx="'+mx+'" cy="'+my+'" r="'+(r*0.22)+'" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>';
   if(hasFl){
@@ -2849,7 +4099,7 @@ function svgButterflyBody(r,col,lwd,hasFl,tiltDeg){
 function svgCheckBody(r,col,lwd,hasFl,tiltDeg){
   var left=-r*0.55, right=r*0.55, h=r*0.62;
   var L=rot30pt(left,h,tiltDeg), R=rot30pt(right,h,tiltDeg);
-  var out='<rect x="'+(-r*0.95)+'" y="'+(-r*0.85)+'" width="'+(r*1.9)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
+  var out='<rect x="'+(-r*1.15)+'" y="'+(-r*0.85)+'" width="'+(r*2.3)+'" height="'+(r*1.7)+'" fill="#fff"/>'+
     '<path d="M '+L.tx+' '+L.ty+' L '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' L '+L.bx+' '+L.by+' Z" fill="#fff"/>'+
     '<path d="M '+L.tx+' '+L.ty+' L '+L.bx+' '+L.by+' M '+R.tx+' '+R.ty+' L '+R.bx+' '+R.by+' M '+L.tx+' '+L.ty+' L '+R.bx+' '+R.by+'" fill="none" stroke="'+col+'" stroke-width="'+lwd+'"/>';
   if(hasFl){
@@ -2971,6 +4221,10 @@ function fittingSvgMarkup(el){
   var baseType=el.ft.replace(/^fl_/,'');
   var body='';
   if(baseType==='flange'){ body=svgFlangeBody(r,col,lwd,tiltDeg); }
+  else if(baseType==='boss'){ body=svgBossBody(r,col,lwd,isPlan?0:ang); }
+  else if(baseType==='strainer'){ body=svgStrainerBody(r,col,lwd,isPlan?0:ang,isPlan); }
+  else if(baseType==='y_strainer'){ body=svgYStrainerBody(r,col,lwd,isPlan?0:ang,isPlan); }
+  else if(baseType==='flex'){ body=svgFlexBody(r,col,lwd,isPlan?0:ang,isPlan); }
   else if(baseType==='gate'){ body=svgValveBodyBody(r,col,lwd,hasFl,tiltDeg); }
   else if(baseType==='globe'){ body=svgValveBodyBody(r,col,lwd,hasFl,tiltDeg)+'<circle cx="0" cy="0" r="'+(r*0.22)+'" fill="'+col+'"/>'; }
   else if(baseType==='ball'){ body=svgValveBodyBody(r,col,lwd,hasFl,tiltDeg)+'<circle cx="0" cy="0" r="'+(r*0.22)+'" fill="#fff" stroke="'+col+'" stroke-width="'+lwd+'"/>'; }
@@ -3141,7 +4395,134 @@ function handleLoadFile(evt){
   reader.readAsText(file);
 }
 
-// ── 自動保存（ブラウザのlocalStorageに下書きを保持。誤ってタブを閉じた場合の保険） ──
+// ── 背景（PDF／写真）：現場で描いた下書きPDFや現場写真を読み込み、上からトレースできるようにする ──
+function triggerLoadPdf(){
+  document.getElementById('loadPdfInput').value = '';
+  document.getElementById('loadPdfInput').click();
+}
+function handleLoadPdf(evt){
+  var file = evt.target.files && evt.target.files[0];
+  if(!file) return;
+  if(file.type && file.type.indexOf('image/')===0){
+    loadImageFileToBg(file);
+    return;
+  }
+  if(!window.pdfjsLib){ showToast('PDF読込ライブラリの読み込みに失敗しました。通信環境をご確認ください。'); return; }
+  showToast('PDFを読み込んでいます…');
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var buf = e.target.result;
+    pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){
+      if(pdf.numPages > 1){
+        openTextInput('取り込むページ番号を入力（1〜'+pdf.numPages+'）', '1', function(v){
+          var n = parseInt(v,10);
+          if(!n || n<1 || n>pdf.numPages) n=1;
+          renderPdfPageToBg(pdf, n);
+        }, true);
+      } else {
+        renderPdfPageToBg(pdf, 1);
+      }
+    }).catch(function(err){
+      showToast('PDFの読み込みに失敗しました');
+    });
+  };
+  reader.onerror = function(){ showToast('PDFの読み込みに失敗しました'); };
+  reader.readAsArrayBuffer(file);
+}
+// 写真（jpg/png等）をそのまま背景として読み込む。PDF取込と同じ下敷き機構（濃さ・サイズ・回転・位置）をそのまま使う
+function loadImageFileToBg(file){
+  showToast('写真を読み込んでいます…');
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var centerScr = s2w(canvas.width/2, canvas.height/2);
+      var baseW = img.naturalWidth/300, baseH = img.naturalHeight/300;
+      S.bg = {img:img, wx:centerScr.x, wy:centerScr.y, baseW:baseW, baseH:baseH, scale:2.594, opacity:0.45, angle:0};
+      document.getElementById('bgOpacitySlider').value = 45;
+      S.bgPanelOpen = true;
+      updateBgPanel();
+      render();
+      showToast('写真を読み込みました');
+    };
+    img.onerror = function(){ showToast('写真の読み込みに失敗しました'); };
+    img.src = e.target.result;
+  };
+  reader.onerror = function(){ showToast('写真の読み込みに失敗しました'); };
+  reader.readAsDataURL(file);
+}
+function renderPdfPageToBg(pdf, pageNum){
+  pdf.getPage(pageNum).then(function(page){
+    var viewport = page.getViewport({scale:2});
+    var off = document.createElement('canvas');
+    off.width = viewport.width; off.height = viewport.height;
+    var offCtx = off.getContext('2d');
+    return page.render({canvasContext:offCtx, viewport:viewport}).promise.then(function(){
+      var img = new Image();
+      img.onload = function(){
+        // 画面中央を基準に、既定サイズ（ワールド座標で1pxあたり1/300m相当）で配置する
+        // ─ 実寸ではなく初期表示用の目安なので、配置後に「サイズ」ボタンで調整する前提
+        var centerScr = s2w(canvas.width/2, canvas.height/2);
+        var baseW = viewport.width/300, baseH = viewport.height/300;
+        S.bg = {img:img, wx:centerScr.x, wy:centerScr.y, baseW:baseW, baseH:baseH, scale:2.594, opacity:0.45, angle:0};
+        document.getElementById('bgOpacitySlider').value = 45;
+        S.bgPanelOpen = true;
+        updateBgPanel();
+        render();
+        showToast('PDF（'+pageNum+'ページ目）を読み込みました');
+      };
+      img.src = off.toDataURL();
+    });
+  }).catch(function(){
+    showToast('PDFページの読み込みに失敗しました');
+  });
+}
+function setBgOpacity(v){
+  if(!S.bg) return;
+  S.bg.opacity = Math.max(0.1, Math.min(1, v/100));
+  render();
+}
+function rotateBg(deg){
+  if(!S.bg) return;
+  S.bg.angle = ((S.bg.angle||0) + deg + 360) % 360;
+  render();
+}
+function resetBgAngle(){
+  if(!S.bg) return;
+  S.bg.angle = 0;
+  render();
+}
+function scaleBg(factor){
+  if(!S.bg) return;
+  S.bg.scale = Math.max(0.1, Math.min(10, S.bg.scale*factor));
+  render();
+}
+function resetBgScale(){
+  if(!S.bg) return;
+  S.bg.scale = 2.594;
+  render();
+}
+function removeBg(){
+  if(!S.bg) return;
+  if(S.tool==='movebg') setTool('pipe');
+  S.bg = null;
+  S.bgPanelOpen = false;
+  updateBgPanel();
+  render();
+}
+function toggleBgPanel(){
+  if(!S.bg) return;
+  S.bgPanelOpen = !S.bgPanelOpen;
+  updateBgPanel();
+}
+function updateBgPanel(){
+  var panel = document.getElementById('bgPanel');
+  var btn = document.getElementById('bgToggleBtn');
+  if(btn) btn.style.display = S.bg ? 'flex' : 'none';
+  if(!panel) return;
+  panel.classList.toggle('vis', !!S.bg && !!S.bgPanelOpen);
+}
+
 var AUTOSAVE_KEY = 'pipeiso_autosave_v1';
 var autosaveTimer=null;
 function scheduleAutosave(){
