@@ -413,6 +413,9 @@ header{
           <button class="di" onclick="setTool('trim')">✂️<br>トリム</button>
           <button class="di" onclick="setTool('extend')">📏<br>延長</button>
         </div>
+        <div class="dg c1" style="margin-top:6px;">
+          <button class="di" onclick="setTool('angle')">📐<br>角度（補助三角形）</button>
+        </div>
       </div>
       <div class="div"></div>
       <div class="dsec dsec-toggle" onclick="toggleSection('stamp')">
@@ -800,6 +803,7 @@ function render(){
   S.els.forEach(function(e){ if(e.kind==='pipe'||e.kind==='hose') drawEl(e, e===S.sel||e===S.dragEl||S.multiSel.indexOf(e)>=0, false); });
   S.els.forEach(function(e){ if(e.kind!=='pipe'&&e.kind!=='hose') drawEl(e, e===S.sel||e===S.dragEl||S.multiSel.indexOf(e)>=0, false); });
   if(S.prev) drawEl(S.prev, false, true);
+  if(S.anglePrev) drawAngleGrp(S.anglePrev, false, true);
   if(S.hoseDrawing && S.hosePts && S.hosePts.length>=2){
     drawEl({kind:'hose', pts:S.hosePts}, false, true);
   }
@@ -922,8 +926,146 @@ function drawEl(el,sel,ghost){
       ctx.strokeStyle='#0277bd'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
       ctx.strokeRect(sp.x-2,sp.y-13*S.zoom*(el.scale||1),m.width+4,15*S.zoom*(el.scale||1)); ctx.setLineDash([]);
     }
+  } else if(el.kind==='anglegrp'){
+    drawAngleGrp(el, sel, ghost);
   }
   ctx.restore();
+}
+
+// ── 角度モード：補助三角形（頂点V・基準配管の両端点A/Bで構成）の描画 ──
+// A-V、B-V を極細の補助線として描き、三角形の内側にはA-V/B-Vを同じ比率で結ぶ
+// 平行線を複数本描画してハッチング（傾斜配管であることを示す慣例的な表現）とする。
+function drawAngleGrp(el, sel, ghost){
+  if(!el) return;
+  var pA=w2s(el.ax,el.ay), pB=w2s(el.bx,el.by), pV=w2s(el.vx,el.vy);
+  ctx.save();
+  if(ghost) ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = ghost ? '#0277bd' : (sel ? '#d32f2f' : '#8a93a3');
+  ctx.lineWidth = ghost ? Math.max(1, 1*S.zoom) : Math.max(0.5, 0.6*S.zoom);
+  ctx.lineCap='round';
+  // 補助線（三角形の2辺）
+  ctx.beginPath(); ctx.moveTo(pA.x,pA.y); ctx.lineTo(pV.x,pV.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pB.x,pB.y); ctx.lineTo(pV.x,pV.y); ctx.stroke();
+  // ハッチング（本数は el.hatchCount、角度は el.hatchAngle で調整可能。既定は本線と平行・4本＝粗め）
+  var hatchAngle = (el.hatchAngle!=null) ? el.hatchAngle : Math.atan2(pB.y-pA.y, pB.x-pA.x)*180/Math.PI;
+  var hLines = hatchLinesInTriangle(pA,pB,pV, hatchAngle, el.hatchCount||4);
+  ctx.lineWidth = ghost ? Math.max(0.7, 0.7*S.zoom) : Math.max(0.5, 0.6*S.zoom);
+  hLines.forEach(function(seg){
+    ctx.beginPath(); ctx.moveTo(seg[0].x,seg[0].y); ctx.lineTo(seg[1].x,seg[1].y); ctx.stroke();
+  });
+  if(sel || ghost){
+    ctx.fillStyle= ghost ? '#0277bd' : '#0277bd';
+    [pA,pB,pV].forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill();});
+  }
+  ctx.restore();
+}
+
+// ── 角度モード：ジオメトリ計算用ヘルパー ──
+// 2点(px,py)→(tx,ty)方向の角度を最寄りの30°刻みにスナップして返す（度単位）
+function angleSnapDeg(px,py,tx,ty){
+  var ang = Math.atan2(ty-py, tx-px)*180/Math.PI;
+  return Math.round(ang/30)*30;
+}
+// 2直線（A発・角度angADeg／B発・角度angBDeg）の交点を頂点として返す。平行で交点が無ければnull
+function angleVertexFromDeg(Ax,Ay,Bx,By,angADeg,angBDeg){
+  var radA=angADeg*Math.PI/180, radB=angBDeg*Math.PI/180;
+  var dAx=Math.cos(radA), dAy=Math.sin(radA);
+  var dBx=Math.cos(radB), dBy=Math.sin(radB);
+  var denom = dAx*dBy - dAy*dBx;
+  if(Math.abs(denom) < 1e-6) return null;
+  var t = ((Bx-Ax)*dBy - (By-Ay)*dBx)/denom;
+  return {x:Ax+t*dAx, y:Ay+t*dAy};
+}
+// 点(px,py)が三角形(x1,y1)-(x2,y2)-(x3,y3)の内側にあるか判定する
+function pointInTriangle(px,py, x1,y1,x2,y2,x3,y3){
+  function sign(ax,ay,bx,by,cx,cy){ return (ax-cx)*(by-cy)-(bx-cx)*(ay-cy); }
+  var d1=sign(px,py,x1,y1,x2,y2);
+  var d2=sign(px,py,x2,y2,x3,y3);
+  var d3=sign(px,py,x3,y3,x1,y1);
+  var hasNeg=(d1<0)||(d2<0)||(d3<0);
+  var hasPos=(d1>0)||(d2>0)||(d3>0);
+  return !(hasNeg && hasPos);
+}
+// 三角形p0-p1-p2の内部を、指定角度(度)の平行線count-1本でクリッピングして分割線分の配列を返す
+// （どんな角度でも三角形の内側だけに収まるハッチングを描けるようにするための汎用関数）
+function hatchLinesInTriangle(p0,p1,p2, angleDeg, count){
+  var rad = angleDeg*Math.PI/180;
+  var nx = -Math.sin(rad), ny = Math.cos(rad); // ハッチング方向に垂直な法線ベクトル
+  var verts=[p0,p1,p2];
+  var projs = verts.map(function(p){ return p.x*nx+p.y*ny; });
+  var minP=Math.min.apply(null,projs), maxP=Math.max.apply(null,projs);
+  var edges=[[p0,p1],[p1,p2],[p2,p0]];
+  var n = Math.max(2, count||4);
+  var lines=[];
+  for(var k=1;k<n;k++){
+    var offset = minP + (maxP-minP)*k/n;
+    var pts=[];
+    for(var ei=0; ei<edges.length; ei++){
+      var a=edges[ei][0], b=edges[ei][1];
+      var da = a.x*nx+a.y*ny - offset;
+      var db = b.x*nx+b.y*ny - offset;
+      if(Math.abs(db-da) < 1e-9) continue; // 辺がハッチング方向と平行＝この辺との交点は使わない
+      var t = da/(da-db);
+      if(t>=-1e-6 && t<=1+1e-6){
+        pts.push({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t});
+      }
+    }
+    if(pts.length>=2) lines.push([pts[0],pts[1]]);
+  }
+  return lines;
+}
+// 現在のS.angleBase（基準配管）とタップ/ドラッグ中の画面座標posから、補助三角形のプレビューを計算する
+function computeAnglePreview(pos){
+  if(!S.angleBase) return null;
+  var tapW = s2w(pos.x,pos.y);
+  var Ax=S.angleBase.wx1, Ay=S.angleBase.wy1, Bx=S.angleBase.wx2, By=S.angleBase.wy2;
+  var angA = angleSnapDeg(Ax,Ay,tapW.x,tapW.y);
+  var angB = angleSnapDeg(Bx,By,tapW.x,tapW.y);
+  var V = angleVertexFromDeg(Ax,Ay,Bx,By,angA,angB);
+  if(!V) return null;
+  return {kind:'anglegrp', ax:Ax,ay:Ay,bx:Bx,by:By,vx:V.x,vy:V.y,hatchCount:4,angA:angA,angB:angB,
+          hatchAngle: Math.atan2(By-Ay,Bx-Ax)*180/Math.PI};
+}
+// 作成済みの補助三角形をタップした時の処理：
+// ・頂点付近 → ハッチング本数を編集
+// ・辺(A側/B側)付近 → その辺の角度を30°ずつ回転（三角形の形自体が変わる）
+// ・上記以外（三角形の内側） → ハッチングの角度だけを30°ずつ回転（三角形の形はそのまま）
+function handleAngleGrpTap(el, pos){
+  var pA=w2s(el.ax,el.ay), pB=w2s(el.bx,el.by), pV=w2s(el.vx,el.vy);
+  if(dist2(pos.x,pos.y,pV.x,pV.y) < 16){
+    openTextInput('ハッチング本数を編集', String(el.hatchCount||4), function(t){
+      var num = parseInt(t,10);
+      if(!isNaN(num) && num>=2 && num<=30){ saveH(); el.hatchCount=num; render(); }
+      else showToast('2〜30の範囲で入力してください');
+    }, true, '1', false);
+    return;
+  }
+  var LEG_HIT = 12;
+  var dA = segD({x:pos.x,y:pos.y}, pA, pV);
+  var dB = segD({x:pos.x,y:pos.y}, pB, pV);
+  if(dA < LEG_HIT || dB < LEG_HIT){
+    saveH();
+    var newV;
+    if(dA <= dB){
+      el.angA = ((el.angA||0) + 30) % 360;
+      newV = angleVertexFromDeg(el.ax,el.ay,el.bx,el.by, el.angA, el.angB||0);
+      if(newV){ el.vx=newV.x; el.vy=newV.y; showToast('A側の辺の角度を30°回転しました（同じ場所を再タップでさらに回転）'); }
+      else { el.angA = ((el.angA||0) - 30 + 360) % 360; showToast('その角度では三角形が作れません（2辺が平行）'); }
+    } else {
+      el.angB = ((el.angB||0) + 30) % 360;
+      newV = angleVertexFromDeg(el.ax,el.ay,el.bx,el.by, el.angA||0, el.angB);
+      if(newV){ el.vx=newV.x; el.vy=newV.y; showToast('B側の辺の角度を30°回転しました（同じ場所を再タップでさらに回転）'); }
+      else { el.angB = ((el.angB||0) - 30 + 360) % 360; showToast('その角度では三角形が作れません（2辺が平行）'); }
+    }
+    render();
+    return;
+  }
+  if(pointInTriangle(pos.x,pos.y, pA.x,pA.y,pB.x,pB.y,pV.x,pV.y)){
+    saveH();
+    el.hatchAngle = ((el.hatchAngle!=null?el.hatchAngle:0) + 30) % 360;
+    showToast('ハッチングの角度だけを30°回転しました（同じ場所を再タップでさらに回転）');
+    render();
+  }
 }
 
 function drawDimOnLine(el,col,ghost,sel){
@@ -2365,6 +2507,10 @@ function hitTest(sx,sy){
       ctx.font='bold '+(12*S.zoom*(e.scale||1))+'px sans-serif';
       var m=ctx.measureText(e.text);
       if(sx>=tp.x-2&&sx<=tp.x+m.width+4&&sy>=tp.y-(14*S.zoom*(e.scale||1))&&sy<=tp.y+2) return {el:e,part:'body'};
+    } else if(e.kind==='anglegrp'){
+      // 補助三角形：頂点から2辺（元配管の両端点への線）の近く、または三角形の内側（ハッチング部分）をタップしたら当たりとする
+      var agA=w2s(e.ax,e.ay), agB=w2s(e.bx,e.by), agV=w2s(e.vx,e.vy);
+      if(segD({x:sx,y:sy},agA,agV)<10 || segD({x:sx,y:sy},agB,agV)<10 || pointInTriangle(sx,sy, agA.x,agA.y,agB.x,agB.y,agV.x,agV.y)) return {el:e,part:'body'};
     }
   }
   return null;
@@ -2650,6 +2796,12 @@ function startPress(pos){
     return;
   }
 
+  // 角度モード：頂点配置中（基準配管を選んだ後）は、ドラッグでゴースト表示→指を離した位置で確定、
+  // という配管ツールと同じ操作にしたいため、長押し（つかんで移動）判定を挟まない
+  if(S.tool==='angle' && S.angleBase){
+    return;
+  }
+
   // ホース（フリーライン）：配管と同じく、長押し判定を経由させる。
   // これにより「その場でじっとしていれば既存要素を長押しで掴める／ドラッグすればホースを描き始める」という
   // 配管ツールと同じ挙動になる（すぐに描画を確定させてしまうと長押しでの既存要素の移動ができなくなるため）。
@@ -2783,6 +2935,11 @@ function movePress(pos){
     S.prev={kind:'pipe',pt:S.pt,wx1:S.drawStart.x,wy1:S.drawStart.y,wx2:we2.x,wy2:we2.y};
     render();
   }
+  if(S.angleDrawing && S.angleBase){
+    S.anglePrev = computeAnglePreview(pos);
+    render();
+    return;
+  }
   if(S.drawingLeader){
     var we3 = s2w(pos.x,pos.y);
     S.leaderPrev = {wx1:S.leaderStart.x, wy1:S.leaderStart.y, wx2:we3.x, wy2:we3.y};
@@ -2805,6 +2962,21 @@ function movePress(pos){
 
 function endPress(pos){
   cancelLongPress();
+  if(S.angleDrawing){
+    S.angleDrawing = false;
+    var fin = computeAnglePreview(pos);
+    S.anglePrev = null;
+    if(fin){
+      saveH();
+      S.els.push({kind:'anglegrp', ax:fin.ax, ay:fin.ay, bx:fin.bx, by:fin.by, vx:fin.vx, vy:fin.vy, hatchCount:fin.hatchCount, angA:fin.angA, angB:fin.angB, hatchAngle:fin.hatchAngle});
+      showToast('補助三角形を作成しました（三角形の頂点タップで本数調整／辺タップで角度調整）');
+    } else {
+      showToast('頂点が求まりませんでした（2辺が平行）。もう一度お試しください');
+    }
+    S.angleBase = null;
+    render();
+    return;
+  }
   if(S.bgDragging){ S.bgDragging=false; return; }
   if(S.hoseDrawing){
     S.hoseDrawing=false;
@@ -3243,6 +3415,32 @@ function handleDown(pos){
     }
     return;
   }
+  if(S.tool==='angle'){
+    if(S.angleBase){
+      // 頂点配置中（タップ2回目）：ここでは確定せずプレビュー更新のみ行う。
+      // 確定（要素の追加）はmovePress/endPress側で、指を離した最終位置を使って行う。
+      S.anglePrev = computeAnglePreview(pos);
+      render();
+      return;
+    }
+    var hAg = hitTest(pos.x,pos.y);
+    if(hAg && hAg.el.kind==='anglegrp'){
+      // 既存の補助三角形をタップ：頂点付近ならハッチング本数編集、辺付近ならその辺の角度を回転
+      handleAngleGrpTap(hAg.el, pos);
+      return;
+    }
+    var anBase = nearestPointOnPipe(pos.x,pos.y);
+    if(anBase){
+      S.angleBase = anBase.el;
+      S.angleDrawing = true;
+      S.anglePrev = computeAnglePreview(pos);
+      showToast('頂点にしたい位置までドラッグ、または指を離して確定してください');
+    } else {
+      showToast('補助三角形を付けたい配管、または既存の三角形をタップしてください');
+    }
+    render();
+    return;
+  }
   if(S.tool==='trim' || S.tool==='extend'){
     var trimModeLabel = (S.tool==='trim') ? 'トリム' : '延長';
     var htNear = nearestPointOnPipe(pos.x,pos.y); // 継手が上に重なっていても、直下の配管を検出する
@@ -3560,7 +3758,7 @@ document.addEventListener('click',function(e){
 // という意図のための機能なので、何も進行中でなければ何もしない。
 function confirmAtLastMouse(){
   if(!S.lastMousePos) return;
-  var busy = !!S.dragMode || S.drawing || S.drawingLeader || S.rangeSelecting || S.hoseDrawing || S.pendingScale || S.bgDragging;
+  var busy = !!S.dragMode || S.drawing || S.drawingLeader || S.rangeSelecting || S.hoseDrawing || S.pendingScale || S.bgDragging || S.angleDrawing;
   if(!busy) return;
   var pos = S.lastMousePos;
   S.downPos = pos;      // タップ位置＝現在のマウス位置とみなす（移動量0扱いにするため）
@@ -3579,6 +3777,23 @@ document.addEventListener('keydown',function(e){
     if(tag==='INPUT' || tag==='TEXTAREA') return; // 各入力欄は個別のEnter処理に任せる
     hideContextMenu();
     confirmAtLastMouse();
+    return;
+  }
+  if(e.key==='Delete' || e.key==='Backspace'){
+    var tag2=(document.activeElement && document.activeElement.tagName)||'';
+    if(tag2==='INPUT' || tag2==='TEXTAREA') return; // 入力欄では通常の削除動作を優先する
+    if((S.multiSel && S.multiSel.length>0) || S.dragEl){
+      e.preventDefault();
+      hideContextMenu();
+      if(S.multiSel && S.multiSel.length>0){
+        deleteMultiSel();
+      } else if(S.dragEl){
+        deleteSingleElement(S.dragEl);
+        S.dragEl=null; S.dragMode=null;
+        updatePipeEditPanel();
+        render();
+      }
+    }
   }
 });
 
@@ -3886,6 +4101,7 @@ function setTool(t){
   S.pendingScale=false;
   S.multiSel=[]; S.rangeSelecting=false; S.rangeStart=null; S.rangeEnd=null;
   S.trimBoundary=null; S.sel=null; // トリム/延長の基準配管選択もツール切替でリセットする
+  S.angleBase=null; S.angleDrawing=false; S.anglePrev=null; // 角度モードの状態もツール切替でリセットする
   ['bPipe','bDim','bTxt','bErs','bSel'].forEach(function(id){document.getElementById(id).classList.remove('on');});
   var m={pipe:'bPipe',dim:'bDim',text:'bTxt',eraser:'bErs',rangesel:'bSel'};
   if(m[t]) document.getElementById(m[t]).classList.add('on');
@@ -3969,7 +4185,7 @@ function closeDrawer(){
 
 // ── STATUS / TOAST ─────────────────────────────
 function updateSt(){
-  var tn={pipe:'配管',fitting:'継手',dim:'寸法',text:'文字',eraser:'消去',northarrow:'プラントノース',split:'分割',join:'結合',trim:'トリム',extend:'延長',headerPlan:'ヘッダー(平面)',headerIso:'ヘッダー(アイソメ)',movebg:'背景PDF位置調整',hose:'ホース',rangesel:'選択'};
+  var tn={pipe:'配管',fitting:'継手',dim:'寸法',text:'文字',eraser:'消去',northarrow:'プラントノース',split:'分割',join:'結合',trim:'トリム',extend:'延長',angle:'角度(補助三角形)',headerPlan:'ヘッダー(平面)',headerIso:'ヘッダー(アイソメ)',movebg:'背景PDF位置調整',hose:'ホース',rangesel:'選択'};
   var mode='';
   if(S.dragMode==='move'){
     if(S.dragEl && S.dragEl.kind==='fitting'){
