@@ -1543,7 +1543,7 @@ function svgIcon(ft, isIso){
 
 // 追加記号（キャップ・フルカップリング・プラグ）のSVGパスを生成
 // drawSimpleMark（canvas描画）と同じ形状をSVGで再現する
-var SIMPLE_MARK_TYPES = ['cap','fullcoupling','plug','gauge'];
+var SIMPLE_MARK_TYPES = ['cap','fullcoupling','plug','gauge','riser','riser45'];
 function simpleMarkSvg(ft, col, r, lwd){
   var sw = lwd || 1.5;
   if(ft === 'cap'){
@@ -1558,6 +1558,20 @@ function simpleMarkSvg(ft, col, r, lwd){
   } else if(ft === 'gauge'){
     var gr=r*0.5;
     return '<circle cx="0" cy="0" r="'+gr+'" fill="#fff" stroke="'+col+'" stroke-width="'+sw+'"/>';
+  } else if(ft === 'riser' || ft === 'riser45'){
+    var rr=r*0.5, cx=rr*1.0, gapDeg=(ft==='riser45')?180:55;
+    function riserPt(angDeg){ var a=angDeg*Math.PI/180; return {x:cx+rr*Math.cos(a), y:rr*Math.sin(a)}; }
+    var pTop=riserPt(-90), pBot=riserPt(90);
+    var rightArc = 'M '+pTop.x+' '+pTop.y+' A '+rr+' '+rr+' 0 0 1 '+pBot.x+' '+pBot.y;
+    var rightFill = rightArc+' Z'; // 塗り用（直径側を閉じるが、この直線部分には線は引かない＝strokeなし）
+    var pA1=riserPt(90), pA2=riserPt(180-gapDeg/2);
+    var leftTopPath = 'M '+pA1.x+' '+pA1.y+' A '+rr+' '+rr+' 0 0 1 '+pA2.x+' '+pA2.y;
+    var pB1=riserPt(180+gapDeg/2), pB2=riserPt(270);
+    var leftBotPath = 'M '+pB1.x+' '+pB1.y+' A '+rr+' '+rr+' 0 0 1 '+pB2.x+' '+pB2.y;
+    return '<path d="'+rightFill+'" fill="#fff" stroke="none"/>'+
+           '<path d="'+rightArc+'" fill="none" stroke="'+col+'" stroke-width="'+sw+'"/>'+
+           '<path d="'+leftTopPath+'" fill="none" stroke="'+col+'" stroke-width="'+sw+'"/>'+
+           '<path d="'+leftBotPath+'" fill="none" stroke="'+col+'" stroke-width="'+sw+'"/>';
   }
   return '';
 }
@@ -1568,7 +1582,7 @@ var FL_GROUP_PLAN  = [['fl_gate','ゲート弁'],['fl_globe','グローブ弁'],
 var NFL_GROUP_PLAN = [['gate','ゲート弁'],['globe','グローブ弁'],['ball','ボール弁'],['butterfly','バタ弁'],['check','チャッキ弁']];
 // 継手（フランジ・ユニオン〜プラグ）：旧フランジ付き／フランジ無グループから独立させた大項目「継手」用
 var FIT_GROUP_ISO  = [['flange','フランジ'],['rc','RC'],['re_short','RE'],['union_new','ユニオン'],['union','六角ニップル'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ']];
-var FIT_GROUP_PLAN = [['flange','フランジ'],['rc','RC'],['re_short','RE'],['union_new','ユニオン'],['union','六角ニップル'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ']];
+var FIT_GROUP_PLAN = [['flange','フランジ'],['rc','RC'],['re_short','RE'],['union_new','ユニオン'],['union','六角ニップル'],['cap','キャップ'],['boss','ボス'],['fullcoupling','フルカップリング'],['plug','プラグ'],['riser','立ち上がり'],['riser45','45°立ち上がり']];
 
 // 後方互換
 var FL_GROUP = FL_GROUP_ISO;
@@ -2424,6 +2438,27 @@ function drawRE(r, col, lwd, shortBase){
 // ── 追加記号（キャップ・フルカップリング・プラグ） ─────────────
 // 平面図用はまっすぐ、アイソメ用は記号全体を30°傾けて描く（tiltDeg指定）
 
+// 立ち上がり記号（通常／45°共通）の描画ヘルパー。
+// gapDegが小さいほど「閉じている部分」が多く、大きいほど「開放している部分」が多い。
+function drawRiserMark(cx, rr, gapDeg){
+  // 反対側（開口部と反対＝右半分）の塗り：直径部分には線を引かない
+  ctx.beginPath();
+  ctx.arc(cx, 0, rr, -90*Math.PI/180, 90*Math.PI/180, false);
+  ctx.closePath();
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  // 右半分の弧（円周部分）だけに線を引く
+  ctx.beginPath();
+  ctx.arc(cx, 0, rr, -90*Math.PI/180, 90*Math.PI/180, false);
+  ctx.stroke();
+  // 配管側（開口部のある左半分）：ギャップを挟んだ2本の弧
+  ctx.beginPath();
+  ctx.arc(cx, 0, rr, 90*Math.PI/180, (180-gapDeg/2)*Math.PI/180, false);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, 0, rr, (180+gapDeg/2)*Math.PI/180, 270*Math.PI/180, false);
+  ctx.stroke();
+}
 function drawSimpleMark(ft, r, col, lwd, tiltDeg){
   ctx.save();
   // キャップ：配管に対して直角に配置／プラグ：さらに90°追加
@@ -2462,6 +2497,14 @@ function drawSimpleMark(ft, r, col, lwd, tiltDeg){
     ctx.beginPath();
     ctx.arc(0,0,gr,0,Math.PI*2);
     ctx.fill(); ctx.stroke();
+  } else if(ft === 'riser' || ft === 'riser45'){
+    // 立ち上がり記号（平面図）：配管の延長線上に円を描く。
+    // 配管側（開口部＝線が途切れている側）は開いた弧のまま、その反対側（右半分）は白塗りにする。
+    // ※塗りの境界（直径部分）には線を引かない＝弧だけに線を引くことで、全体が1つの円に見えるようにする。
+    // riser（通常の立ち上がり）＝開口部が小さい（閉じている部分が多い）
+    // riser45（45°立ち上がり）＝開口部が円のおよそ半分（閉じている部分が少ない）
+    var rr = r*0.5, cx = rr*1.0, gapDeg = (ft === 'riser45') ? 180 : 55;
+    drawRiserMark(cx, rr, gapDeg);
   }
 
   ctx.restore();
